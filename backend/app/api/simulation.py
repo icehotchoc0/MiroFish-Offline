@@ -785,13 +785,19 @@ def delete_simulation(simulation_id: str):
     """시뮬레이션 삭제 (상태 파일 + 시뮬레이션 데이터 전부 삭제)"""
     import shutil
     try:
-        # 실행 중이면 먼저 중지
-        if SimulationRunner.check_env_alive(simulation_id):
-            SimulationRunner.stop_simulation(simulation_id)
+        # 실행 중이면 먼저 중지 (실패해도 삭제 진행)
+        try:
+            if SimulationRunner.check_env_alive(simulation_id):
+                SimulationRunner.stop_simulation(simulation_id)
+        except Exception:
+            pass
 
-        # SimulationManager 상태 삭제
-        manager = SimulationManager()
-        manager.delete_simulation(simulation_id)
+        # SimulationManager 상태 삭제 (실패해도 디렉토리 삭제 진행)
+        try:
+            manager = SimulationManager()
+            manager.delete_simulation(simulation_id)
+        except Exception:
+            pass
 
         # 시뮬레이션 데이터 디렉토리 삭제
         sim_dir = os.path.join(Config.OASIS_SIMULATION_DATA_DIR, simulation_id)
