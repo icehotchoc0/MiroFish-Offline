@@ -183,6 +183,13 @@
             <div class="modal-playback-hint">
               <span class="hint-text">Step3 "시뮬레이션 시작"과 Step5 "심층 상호작용"은 실행 중에만 작동하며 기록 재생을 지원하지 않습니다</span>
             </div>
+            <!-- 삭제 버튼 -->
+            <div :style="{ marginTop: '16px', textAlign: 'right' }">
+              <button
+                :style="{ padding: '6px 16px', background: '#ff4444', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '13px' }"
+                @click="handleDelete"
+              >시뮬레이션 삭제</button>
+            </div>
           </div>
         </div>
       </Transition>
@@ -193,7 +200,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, onActivated, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { getSimulationHistory } from '../api/simulation'
+import { getSimulationHistory, deleteSimulation } from '../api/simulation'
 
 const router = useRouter()
 const route = useRoute()
@@ -399,6 +406,18 @@ const navigateToProject = (simulation) => {
 // Close modal
 const closeModal = () => {
   selectedProject.value = null
+}
+
+const handleDelete = async () => {
+  if (!selectedProject.value) return
+  if (!confirm('이 시뮬레이션을 삭제하시겠습니까? 복구할 수 없습니다.')) return
+  try {
+    await deleteSimulation(selectedProject.value.simulation_id)
+    closeModal()
+    await loadHistory()
+  } catch (err) {
+    alert('삭제 실패: ' + (err.message || '알 수 없는 오류'))
+  }
 }
 
 // Navigate to Graph Construction page (Project)

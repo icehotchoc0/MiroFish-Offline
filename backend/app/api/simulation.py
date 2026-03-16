@@ -780,6 +780,44 @@ def get_simulation(simulation_id: str):
         }), 500
 
 
+@simulation_bp.route('/<simulation_id>', methods=['DELETE'])
+def delete_simulation(simulation_id: str):
+    """시뮬레이션 삭제 (상태 파일 + 시뮬레이션 데이터 전부 삭제)"""
+    import shutil
+    try:
+        # 실행 중이면 먼저 중지
+        if SimulationRunner.check_env_alive(simulation_id):
+            SimulationRunner.stop_simulation(simulation_id)
+
+        # SimulationManager 상태 삭제
+        manager = SimulationManager()
+        manager.delete_simulation(simulation_id)
+
+        # 시뮬레이션 데이터 디렉토리 삭제
+        sim_dir = os.path.join(Config.OASIS_SIMULATION_DATA_DIR, simulation_id)
+        if os.path.exists(sim_dir):
+            shutil.rmtree(sim_dir)
+
+        # Runner 상태 디렉토리 삭제
+        run_state_dir = os.path.join(SimulationRunner.RUN_STATE_DIR, simulation_id)
+        if os.path.exists(run_state_dir):
+            shutil.rmtree(run_state_dir)
+
+        logger.info(f"시뮬레이션 삭제 완료: {simulation_id}")
+        return jsonify({
+            "success": True,
+            "message": f"시뮬레이션 삭제됨: {simulation_id}"
+        })
+
+    except Exception as e:
+        logger.error(f"시뮬레이션 삭제 실패: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }), 500
+
+
 @simulation_bp.route('/list', methods=['GET'])
 def list_simulations():
     """

@@ -480,6 +480,13 @@ class SimulationManager:
         
         return simulations
     
+    def delete_simulation(self, simulation_id: str):
+        """시뮬레이션 상태 파일 삭제"""
+        sim_dir = self._get_simulation_dir(simulation_id)
+        state_path = os.path.join(sim_dir, "state.json")
+        if os.path.exists(state_path):
+            os.remove(state_path)
+
     def get_profiles(self, simulation_id: str, platform: str = "reddit") -> List[Dict[str, Any]]:
         """시뮬레이션의 Agent Profile 조회"""
         state = self._load_simulation_state(simulation_id)
