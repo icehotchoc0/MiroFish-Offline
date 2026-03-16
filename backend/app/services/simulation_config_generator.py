@@ -227,17 +227,25 @@ class SimulationConfigGenerator:
         base_url: Optional[str] = None,
         model_name: Optional[str] = None
     ):
-        self.api_key = api_key or Config.LLM_API_KEY
-        self.base_url = base_url or Config.LLM_BASE_URL
+        self.provider = Config.LLM_PROVIDER.lower()
         self.model_name = model_name or Config.LLM_MODEL_NAME
 
-        if not self.api_key:
-            raise ValueError("LLM_API_KEY 미설정")
+        if self.provider == 'claude':
+            from ..utils.llm_client import LLMClient
+            self._llm_client = LLMClient()
+            self.client = None
+        else:
+            self.api_key = api_key or Config.LLM_API_KEY
+            self.base_url = base_url or Config.LLM_BASE_URL
 
-        self.client = OpenAI(
-            api_key=self.api_key,
-            base_url=self.base_url
-        )
+            if not self.api_key:
+                raise ValueError("LLM_API_KEY 미설정")
+
+            self.client = OpenAI(
+                api_key=self.api_key,
+                base_url=self.base_url
+            )
+            self._llm_client = None
 
     def generate_config(
         self,
@@ -439,19 +447,30 @@ class SimulationConfigGenerator:
 
         for attempt in range(max_attempts):
             try:
-                response = self.client.chat.completions.create(
-                    model=self.model_name,
-                    messages=[
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": prompt}
-                    ],
-                    response_format={"type": "json_object"},
-                    temperature=0.7 - (attempt * 0.1)  # 재시도마다 온도 낮춤
-                    # max_tokens 미설정, LLM 자유 생성
-                )
+                messages = [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": prompt}
+                ]
+                temperature = 0.7 - (attempt * 0.1)
 
-                content = response.choices[0].message.content
-                finish_reason = response.choices[0].finish_reason
+                if self._llm_client:
+                    # Claude 모드
+                    content = self._llm_client.chat(
+                        messages=messages,
+                        temperature=temperature,
+                        response_format={"type": "json_object"}
+                    )
+                    finish_reason = 'stop'
+                else:
+                    # Ollama/OpenAI 모드
+                    response = self.client.chat.completions.create(
+                        model=self.model_name,
+                        messages=messages,
+                        response_format={"type": "json_object"},
+                        temperature=temperature
+                    )
+                    content = response.choices[0].message.content
+                    finish_reason = response.choices[0].finish_reason
 
                 # 절단 여부 확인
                 if finish_reason == 'length':

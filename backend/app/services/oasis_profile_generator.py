@@ -185,17 +185,26 @@ class OasisProfileGenerator:
         storage: Optional[GraphStorage] = None,
         graph_id: Optional[str] = None
     ):
-        self.api_key = api_key or Config.LLM_API_KEY
-        self.base_url = base_url or Config.LLM_BASE_URL
+        self.provider = Config.LLM_PROVIDER.lower()
         self.model_name = model_name or Config.LLM_MODEL_NAME
 
-        if not self.api_key:
-            raise ValueError("LLM_API_KEY가 설정되지 않았습니다")
+        if self.provider == 'claude':
+            # Claude 모드 — LLMClient를 통해 호출
+            from ..utils.llm_client import LLMClient
+            self._llm_client = LLMClient()
+            self.client = None
+        else:
+            self.api_key = api_key or Config.LLM_API_KEY
+            self.base_url = base_url or Config.LLM_BASE_URL
 
-        self.client = OpenAI(
-            api_key=self.api_key,
-            base_url=self.base_url
-        )
+            if not self.api_key:
+                raise ValueError("LLM_API_KEY가 설정되지 않았습니다")
+
+            self.client = OpenAI(
+                api_key=self.api_key,
+                base_url=self.base_url
+            )
+            self._llm_client = None
 
         # GraphStorage for hybrid search enrichment
         self.storage = storage
@@ -471,21 +480,31 @@ class OasisProfileGenerator:
         
         for attempt in range(max_attempts):
             try:
-                response = self.client.chat.completions.create(
-                    model=self.model_name,
-                    messages=[
-                        {"role": "system", "content": self._get_system_prompt(is_individual)},
-                        {"role": "user", "content": prompt}
-                    ],
-                    response_format={"type": "json_object"},
-                    temperature=0.7 - (attempt * 0.1)  # 재시도마다 온도 낮춤
-                    # max_tokens 설정 안 함, LLM이 자유롭게 생성하도록
-                )
-                
-                content = response.choices[0].message.content
-                
-                # 절삭 여부 확인 (finish_reason이 'stop'이 아닌 경우)
-                finish_reason = response.choices[0].finish_reason
+                messages = [
+                    {"role": "system", "content": self._get_system_prompt(is_individual)},
+                    {"role": "user", "content": prompt}
+                ]
+                temperature = 0.7 - (attempt * 0.1)
+
+                if self._llm_client:
+                    # Claude 모드 — LLMClient 사용
+                    content = self._llm_client.chat(
+                        messages=messages,
+                        temperature=temperature,
+                        response_format={"type": "json_object"}
+                    )
+                    finish_reason = 'stop'
+                else:
+                    # Ollama/OpenAI 모드
+                    response = self.client.chat.completions.create(
+                        model=self.model_name,
+                        messages=messages,
+                        response_format={"type": "json_object"},
+                        temperature=temperature
+                    )
+                    content = response.choices[0].message.content
+                    finish_reason = response.choices[0].finish_reason
+
                 if finish_reason == 'length':
                     logger.warning(f"LLM 출력 절삭됨 (attempt {attempt+1}), 복구 시도...")
                     content = self._fix_truncated_json(content)
