@@ -88,27 +88,31 @@ class LLMClient:
         prompt = "\n\n".join(prompt_parts)
 
         options = ClaudeAgentOptions(
-            max_turns=1,
+            max_turns=3,
             model=self.model if self.model else None,
         )
 
         if system_prompt:
             options.system_prompt = system_prompt
 
+        assistant_text = ""
         result_text = ""
         async for message in query(prompt=prompt, options=options):
             if isinstance(message, AssistantMessage):
                 for block in message.content:
                     if isinstance(block, TextBlock):
-                        result_text += block.text
+                        assistant_text += block.text
             elif isinstance(message, ResultMessage):
                 if message.result:
                     result_text = message.result
 
-        if not result_text:
+        # AssistantMessage 텍스트 우선, 없으면 ResultMessage 사용
+        final_text = assistant_text or result_text
+
+        if not final_text:
             raise ValueError("Claude Code SDK가 빈 응답을 반환했습니다")
 
-        return result_text
+        return final_text
 
     def chat(
         self,
