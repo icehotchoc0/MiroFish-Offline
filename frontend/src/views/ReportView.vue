@@ -62,13 +62,13 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import GraphPanel from '../components/GraphPanel.vue'
 import Step4Report from '../components/Step4Report.vue'
 import { getProject, getGraphData } from '../api/graph'
 import { getSimulation } from '../api/simulation'
-import { getReport } from '../api/report'
+import { getReport, getReportStatus } from '../api/report'
 
 const route = useRoute()
 const router = useRouter()
@@ -137,45 +137,62 @@ const toggleMaximize = (target) => {
 }
 
 // --- Data Logic ---
-const loadReportData = async () => {
-  try {
-    addLog(`Loading report data: ${currentReportId.value}`)
-    
-    // Get report info to retrieve simulation_id
-    const reportRes = await getReport(currentReportId.value)
-    if (reportRes.success && reportRes.data) {
-      const reportData = reportRes.data
-      simulationId.value = reportData.simulation_id
-      
-      if (simulationId.value) {
-        // Get simulation info
-        const simRes = await getSimulation(simulationId.value)
-        if (simRes.success && simRes.data) {
-          const simData = simRes.data
-          
-          // Get project info
-          if (simData.project_id) {
-            const projRes = await getProject(simData.project_id)
-            if (projRes.success && projRes.data) {
-              projectData.value = projRes.data
-              addLog(`Project loaded: ${projRes.data.project_id}`)
-              
-              // Get graph data
-              if (projRes.data.graph_id) {
-                await loadGraph(projRes.data.graph_id)
-              }
-            }
+const reportPollTimer = ref(null)
+
+const waitForReport = () => {
+  addLog('보고서 생성 중... 완료될 때까지 대기합니다')
+  updateStatus('processing')
+  reportPollTimer.value = setInterval(async () => {
+    try {
+      const reportRes = await getReport(currentReportId.value)
+      if (reportRes.success && reportRes.data) {
+        clearInterval(reportPollTimer.value)
+        reportPollTimer.value = null
+        addLog('보고서 생성 완료!')
+        await onReportReady(reportRes.data)
+      }
+    } catch {
+      // 아직 생성 중 — 계속 대기
+    }
+  }, 3000)
+}
+
+const onReportReady = async (reportData) => {
+  simulationId.value = reportData.simulation_id
+  updateStatus('completed')
+
+  if (simulationId.value) {
+    const simRes = await getSimulation(simulationId.value)
+    if (simRes.success && simRes.data) {
+      const simData = simRes.data
+      if (simData.project_id) {
+        const projRes = await getProject(simData.project_id)
+        if (projRes.success && projRes.data) {
+          projectData.value = projRes.data
+          addLog(`Project loaded: ${projRes.data.project_id}`)
+          if (projRes.data.graph_id) {
+            await loadGraph(projRes.data.graph_id)
           }
         }
       }
+    }
+  }
+}
+
+const loadReportData = async () => {
+  try {
+    addLog(`Loading report data: ${currentReportId.value}`)
+
+    const reportRes = await getReport(currentReportId.value)
+    if (reportRes.success && reportRes.data) {
+      await onReportReady(reportRes.data)
     } else {
-      addLog(`Report not found, redirecting to home`)
-      router.push('/')
-      return
+      // 보고서가 아직 없음 — 생성 중일 수 있으므로 폴링 시작
+      waitForReport()
     }
   } catch (err) {
-    addLog(`Load error: ${err.message}`)
-    router.push('/')
+    // 404 등 에러 — 생성 중일 수 있으므로 폴링 시작
+    waitForReport()
   }
 }
 
@@ -212,6 +229,12 @@ watch(() => route.params.reportId, (newId) => {
 onMounted(() => {
   addLog('ReportView initialized')
   loadReportData()
+})
+
+onUnmounted(() => {
+  if (reportPollTimer.value) {
+    clearInterval(reportPollTimer.value)
+  }
 })
 </script>
 
