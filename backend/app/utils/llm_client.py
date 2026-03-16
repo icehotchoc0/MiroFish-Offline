@@ -14,15 +14,9 @@ from openai import OpenAI
 from ..config import Config
 
 
-# Claude Code SDK 동시 호출 제한 세마포어
-_claude_semaphore: Optional[asyncio.Semaphore] = None
-
-
-def _get_claude_semaphore() -> asyncio.Semaphore:
-    global _claude_semaphore
-    if _claude_semaphore is None:
-        _claude_semaphore = asyncio.Semaphore(Config.CLAUDE_MAX_CONCURRENT)
-    return _claude_semaphore
+# Claude Code SDK 동시 호출 제한 — 스레딩 기반
+import threading
+_claude_threading_semaphore = threading.Semaphore(Config.CLAUDE_MAX_CONCURRENT)
 
 
 class LLMClient:
@@ -67,22 +61,8 @@ class LLMClient:
         messages: List[Dict[str, str]],
         system_prompt: Optional[str] = None
     ) -> str:
-        """Claude Code SDK를 동기적으로 호출"""
-        try:
-            loop = asyncio.get_running_loop()
-        except RuntimeError:
-            loop = None
-
-        if loop and loop.is_running():
-            # 이미 이벤트 루프가 실행 중이면 새 스레드에서 실행
-            import concurrent.futures
-            with concurrent.futures.ThreadPoolExecutor() as executor:
-                future = executor.submit(
-                    asyncio.run,
-                    self._claude_query_async(messages, system_prompt)
-                )
-                return future.result()
-        else:
+        """Claude Code SDK를 동기적으로 호출 (스레딩 세마포어로 동시 호출 제한)"""
+        with _claude_threading_semaphore:
             return asyncio.run(
                 self._claude_query_async(messages, system_prompt)
             )
@@ -116,14 +96,11 @@ class LLMClient:
             options.system_prompt = system_prompt
 
         result_text = ""
-        sem = _get_claude_semaphore()
-
-        async with sem:
-            async for message in query(prompt=prompt, options=options):
-                if isinstance(message, AssistantMessage):
-                    for block in message.content:
-                        if isinstance(block, TextBlock):
-                            result_text += block.text
+        async for message in query(prompt=prompt, options=options):
+            if isinstance(message, AssistantMessage):
+                for block in message.content:
+                    if isinstance(block, TextBlock):
+                        result_text += block.text
 
         if not result_text:
             raise ValueError("Claude Code SDK가 빈 응답을 반환했습니다")
