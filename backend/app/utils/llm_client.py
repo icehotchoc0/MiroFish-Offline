@@ -73,7 +73,7 @@ class LLMClient:
         system_prompt: Optional[str] = None
     ) -> str:
         """Claude Code SDK 비동기 호출"""
-        from claude_agent_sdk import query, ClaudeAgentOptions, AssistantMessage, TextBlock
+        from claude_agent_sdk import query, ClaudeAgentOptions, AssistantMessage, TextBlock, ResultMessage
 
         # messages를 하나의 프롬프트로 변환
         prompt_parts = []
@@ -101,6 +101,9 @@ class LLMClient:
                 for block in message.content:
                     if isinstance(block, TextBlock):
                         result_text += block.text
+            elif isinstance(message, ResultMessage):
+                if message.result:
+                    result_text = message.result
 
         if not result_text:
             raise ValueError("Claude Code SDK가 빈 응답을 반환했습니다")
