@@ -16,7 +16,7 @@ from typing import Dict, Any, List, Optional, Callable
 from dataclasses import dataclass, field, asdict
 from datetime import datetime
 
-from openai import OpenAI
+from ..utils.llm_client import LLMClient
 
 from ..config import Config
 from ..utils.logger import get_logger
@@ -227,25 +227,8 @@ class SimulationConfigGenerator:
         base_url: Optional[str] = None,
         model_name: Optional[str] = None
     ):
-        self.provider = Config.LLM_PROVIDER.lower()
         self.model_name = model_name or Config.LLM_MODEL_NAME
-
-        if self.provider == 'claude':
-            from ..utils.llm_client import LLMClient
-            self._llm_client = LLMClient()
-            self.client = None
-        else:
-            self.api_key = api_key or Config.LLM_API_KEY
-            self.base_url = base_url or Config.LLM_BASE_URL
-
-            if not self.api_key:
-                raise ValueError("LLM_API_KEY 미설정")
-
-            self.client = OpenAI(
-                api_key=self.api_key,
-                base_url=self.base_url
-            )
-            self._llm_client = None
+        self.llm = LLMClient()
 
     def generate_config(
         self,
@@ -453,29 +436,11 @@ class SimulationConfigGenerator:
                 ]
                 temperature = 0.7 - (attempt * 0.1)
 
-                if self._llm_client:
-                    # Claude 모드
-                    content = self._llm_client.chat(
-                        messages=messages,
-                        temperature=temperature,
-                        response_format={"type": "json_object"}
-                    )
-                    finish_reason = 'stop'
-                else:
-                    # Ollama/OpenAI 모드
-                    response = self.client.chat.completions.create(
-                        model=self.model_name,
-                        messages=messages,
-                        response_format={"type": "json_object"},
-                        temperature=temperature
-                    )
-                    content = response.choices[0].message.content
-                    finish_reason = response.choices[0].finish_reason
-
-                # 절단 여부 확인
-                if finish_reason == 'length':
-                    logger.warning(f"LLM 출력이 절단됨 (attempt {attempt+1})")
-                    content = self._fix_truncated_json(content)
+                content = self.llm.chat(
+                    messages=messages,
+                    temperature=temperature,
+                    response_format={"type": "json_object"}
+                )
 
                 # JSON 파싱 시도
                 try:
