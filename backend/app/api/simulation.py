@@ -21,7 +21,7 @@ logger = get_logger('mirofish.api.simulation')
 
 # Interview prompt 최적화 접두사
 # 이 접두사를 추가하면 Agent가 도구를 호출하지 않고 텍스트로 직접 응답합니다
-INTERVIEW_PROMPT_PREFIX = "당신의 페르소나, 모든 과거 기억과 행동을 결합하여, 어떤 도구도 호출하지 말고 텍스트로 직접 답변하세요: "
+INTERVIEW_PROMPT_PREFIX = "당신의 페르소나, 모든 과거 기억과 행동을 결합하여, 어떤 도구도 호출하지 말고 텍스트로 직접 답변하세요. 반드시 한국어로 답변하세요: "
 
 
 def optimize_interview_prompt(prompt: str) -> str:
