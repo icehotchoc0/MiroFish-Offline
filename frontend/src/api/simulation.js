@@ -173,7 +173,7 @@ export const getEnvStatus = (data) => {
  * @param {Object} data - { simulation_id, interviews: [{ agent_id, prompt }] }
  */
 export const interviewAgents = async (data) => {
-  const BATCH_SIZE = 10
+  const BATCH_SIZE = 3
   const interviews = data.interviews || []
 
   if (interviews.length <= BATCH_SIZE) {

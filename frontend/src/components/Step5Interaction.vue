@@ -735,7 +735,8 @@ const sendToAgent = async (message) => {
     interviews: [{
       agent_id: selectedAgentIndex.value,
       prompt: prompt
-    }]
+    }],
+    timeout: 300
   })
 
   if (res.success && res.data) {
@@ -819,7 +820,8 @@ const submitSurvey = async () => {
 
     const res = await interviewAgents({
       simulation_id: props.simulationId,
-      interviews: interviews
+      interviews: interviews,
+      timeout: 600
     })
 
     if (res.success && res.data) {
