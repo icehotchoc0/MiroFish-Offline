@@ -360,7 +360,7 @@ class SimulationConfigGenerator:
             twitter_config=twitter_config,
             reddit_config=reddit_config,
             llm_model=self.model_name,
-            llm_base_url=self.base_url,
+            llm_base_url=Config.LLM_BASE_URL,
             generation_reasoning=" | ".join(reasoning_parts)
         )
 
