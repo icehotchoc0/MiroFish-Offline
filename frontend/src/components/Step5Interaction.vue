@@ -293,7 +293,7 @@
               v-model="chatInput"
               class="chat-input"
               placeholder="질문을 입력하세요..."
-              @keydown.enter.exact.prevent="sendMessage"
+              @keydown.enter.exact="handleEnter"
               :disabled="isSending || (!selectedAgent && chatTarget === 'agent')"
               rows="1"
               ref="chatInputRef"
@@ -639,6 +639,12 @@ const renderMarkdown = (content) => {
 }
 
 // Chat Methods
+const handleEnter = (e) => {
+  if (e.isComposing) return  // 한국어/중국어/일본어 IME 조합 중이면 무시
+  e.preventDefault()
+  sendMessage()
+}
+
 const sendMessage = async () => {
   if (!chatInput.value.trim() || isSending.value) return
 
