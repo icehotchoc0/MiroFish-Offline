@@ -169,28 +169,24 @@ export const getEnvStatus = (data) => {
 }
 
 /**
- * Batch interview Agents
+ * LLM 폴백 인터뷰 (시뮬레이션 종료 후)
  * @param {Object} data - { simulation_id, interviews: [{ agent_id, prompt }] }
  */
-export const interviewAgents = async (data) => {
+const interviewAgentsLLM = async (data) => {
   const BATCH_SIZE = 3
   const interviews = data.interviews || []
 
   if (interviews.length <= BATCH_SIZE) {
-    return requestWithRetry(() => service.post('/api/simulation/interview/batch', data), 3, 1000)
+    return service.post(`/api/simulation/${data.simulation_id}/interview/llm`, data)
   }
 
-  // 큰 배치를 BATCH_SIZE씩 나눠서 순차 호출
   const allResults = {}
   for (let i = 0; i < interviews.length; i += BATCH_SIZE) {
     const batch = interviews.slice(i, i + BATCH_SIZE)
-    const res = await requestWithRetry(
-      () => service.post('/api/simulation/interview/batch', {
-        ...data,
-        interviews: batch
-      }),
-      3, 1000
-    )
+    const res = await service.post(`/api/simulation/${data.simulation_id}/interview/llm`, {
+      ...data,
+      interviews: batch
+    })
     if (res.success && res.data) {
       const results = res.data.result?.results || res.data.results || {}
       Object.assign(allResults, results)
@@ -205,6 +201,52 @@ export const interviewAgents = async (data) => {
         total: interviews.length
       }
     }
+  }
+}
+
+/**
+ * Batch interview Agents (IPC 우선, 실패 시 LLM 폴백)
+ * @param {Object} data - { simulation_id, interviews: [{ agent_id, prompt }] }
+ */
+export const interviewAgents = async (data) => {
+  const BATCH_SIZE = 3
+  const interviews = data.interviews || []
+
+  try {
+    if (interviews.length <= BATCH_SIZE) {
+      return await requestWithRetry(() => service.post('/api/simulation/interview/batch', data), 3, 1000)
+    }
+
+    // 큰 배치를 BATCH_SIZE씩 나눠서 순차 호출
+    const allResults = {}
+    for (let i = 0; i < interviews.length; i += BATCH_SIZE) {
+      const batch = interviews.slice(i, i + BATCH_SIZE)
+      const res = await requestWithRetry(
+        () => service.post('/api/simulation/interview/batch', {
+          ...data,
+          interviews: batch
+        }),
+        3, 1000
+      )
+      if (res.success && res.data) {
+        const results = res.data.result?.results || res.data.results || {}
+        Object.assign(allResults, results)
+      }
+    }
+
+    return {
+      success: true,
+      data: {
+        result: {
+          results: allResults,
+          total: interviews.length
+        }
+      }
+    }
+  } catch (err) {
+    // IPC 실패 (시뮬레이션 종료됨) → LLM 폴백
+    console.warn('IPC 인터뷰 실패, LLM 폴백으로 전환:', err.message)
+    return await interviewAgentsLLM(data)
   }
 }
 

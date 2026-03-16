@@ -3,7 +3,9 @@
 Step2: 엔티티 읽기 및 필터링, OASIS 시뮬레이션 준비 및 실행 (전 과정 자동화)
 """
 
+import json
 import os
+import sqlite3
 import traceback
 from flask import request, jsonify, send_file, current_app
 
@@ -13,6 +15,7 @@ from ..services.entity_reader import EntityReader
 from ..services.oasis_profile_generator import OasisProfileGenerator
 from ..services.simulation_manager import SimulationManager, SimulationStatus
 from ..services.simulation_runner import SimulationRunner, RunnerStatus
+from ..utils.llm_client import LLMClient
 from ..utils.logger import get_logger
 from ..models.project import ProjectManager
 
@@ -2947,6 +2950,405 @@ def get_interview_history():
 
     except Exception as e:
         logger.error(f"Interview 기록 조회 실패: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }), 500
+
+
+# ============== LLM 기반 폴백 인터뷰 ==============
+
+def _load_agent_profile(simulation_id: str, agent_id: int) -> dict:
+    """
+    시뮬레이션 디렉토리에서 에이전트 프로필 로드
+
+    Args:
+        simulation_id: 시뮬레이션 ID
+        agent_id: 에이전트 ID (reddit_profiles.json 내 인덱스)
+
+    Returns:
+        에이전트 프로필 딕셔너리
+
+    Raises:
+        FileNotFoundError: 프로필 파일이 없는 경우
+        IndexError: agent_id에 해당하는 프로필이 없는 경우
+    """
+    simulation_dir = os.path.join(Config.OASIS_SIMULATION_DATA_DIR, simulation_id)
+    profile_path = os.path.join(simulation_dir, "reddit_profiles.json")
+
+    if not os.path.exists(profile_path):
+        raise FileNotFoundError(f"프로필 파일이 존재하지 않습니다: {profile_path}")
+
+    with open(profile_path, 'r', encoding='utf-8') as f:
+        profiles = json.load(f)
+
+    # user_id 기준으로 검색
+    for profile in profiles:
+        if profile.get("user_id") == agent_id:
+            return profile
+
+    # user_id로 못 찾으면 인덱스로 시도
+    if 0 <= agent_id < len(profiles):
+        return profiles[agent_id]
+
+    raise IndexError(f"agent_id={agent_id}에 해당하는 프로필이 없습니다 (총 {len(profiles)}개)")
+
+
+def _load_agent_action_history(simulation_id: str, agent_id: int, limit: int = 20) -> list:
+    """
+    시뮬레이션 SQLite DB에서 에이전트의 행동 이력 로드
+
+    reddit_simulation.db와 twitter_simulation.db 모두에서 검색하여 통합합니다.
+    trace, post, comment 테이블에서 해당 에이전트의 활동을 가져옵니다.
+
+    Args:
+        simulation_id: 시뮬레이션 ID
+        agent_id: 에이전트 ID (DB의 user_id에 대응)
+        limit: 최대 반환 항목 수 (토큰 오버플로우 방지, 기본값 20)
+
+    Returns:
+        행동 이력 리스트 [{"type": "post|comment|trace", "content": "...", "created_at": "..."}]
+    """
+    simulation_dir = os.path.join(Config.OASIS_SIMULATION_DATA_DIR, simulation_id)
+    db_names = ["reddit_simulation.db", "twitter_simulation.db"]
+    actions = []
+
+    for db_name in db_names:
+        db_path = os.path.join(simulation_dir, db_name)
+        if not os.path.exists(db_path):
+            continue
+
+        platform = "reddit" if "reddit" in db_name else "twitter"
+
+        try:
+            conn = sqlite3.connect(db_path)
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+
+            # 테이블 존재 여부 확인
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
+            tables = {row['name'] for row in cursor.fetchall()}
+
+            # post 테이블에서 에이전트의 게시물 조회
+            if 'post' in tables:
+                try:
+                    cursor.execute("""
+                        SELECT content, created_at
+                        FROM post
+                        WHERE user_id = ?
+                        ORDER BY created_at DESC
+                        LIMIT ?
+                    """, (agent_id, limit))
+                    for row in cursor.fetchall():
+                        content = row['content'] if row['content'] else ""
+                        actions.append({
+                            "type": "post",
+                            "platform": platform,
+                            "content": content[:500],  # 내용 길이 제한
+                            "created_at": row['created_at']
+                        })
+                except Exception as e:
+                    logger.debug(f"post 테이블 조회 중 오류 ({db_name}): {e}")
+
+            # comment 테이블에서 에이전트의 댓글 조회
+            if 'comment' in tables:
+                try:
+                    cursor.execute("""
+                        SELECT content, created_at
+                        FROM comment
+                        WHERE user_id = ?
+                        ORDER BY created_at DESC
+                        LIMIT ?
+                    """, (agent_id, limit))
+                    for row in cursor.fetchall():
+                        content = row['content'] if row['content'] else ""
+                        actions.append({
+                            "type": "comment",
+                            "platform": platform,
+                            "content": content[:500],
+                            "created_at": row['created_at']
+                        })
+                except Exception as e:
+                    logger.debug(f"comment 테이블 조회 중 오류 ({db_name}): {e}")
+
+            # trace 테이블에서 좋아요 등 기타 행동 조회 (interview 제외)
+            if 'trace' in tables:
+                try:
+                    cursor.execute("""
+                        SELECT action, info, created_at
+                        FROM trace
+                        WHERE user_id = ? AND action != 'interview'
+                        ORDER BY created_at DESC
+                        LIMIT ?
+                    """, (agent_id, limit))
+                    for row in cursor.fetchall():
+                        info_str = row['info'] if row['info'] else "{}"
+                        try:
+                            info = json.loads(info_str)
+                        except json.JSONDecodeError:
+                            info = {"raw": info_str[:200]}
+                        actions.append({
+                            "type": "trace",
+                            "platform": platform,
+                            "action": row['action'],
+                            "info": str(info)[:300],
+                            "created_at": row['created_at']
+                        })
+                except Exception as e:
+                    logger.debug(f"trace 테이블 조회 중 오류 ({db_name}): {e}")
+
+            conn.close()
+
+        except Exception as e:
+            logger.warning(f"DB 읽기 실패 ({db_name}): {e}")
+
+    # 시간순 정렬 후 최근 항목만 반환
+    actions.sort(key=lambda x: x.get('created_at', ''), reverse=True)
+    return actions[:limit]
+
+
+def _build_llm_interview_prompt(profile: dict, action_history: list, question: str) -> list:
+    """
+    LLM 인터뷰를 위한 메시지 목록 구성
+
+    에이전트 프로필과 행동 이력을 포함한 프롬프트를 생성합니다.
+
+    Args:
+        profile: 에이전트 프로필 딕셔너리
+        action_history: 에이전트 행동 이력 리스트
+        question: 사용자 질문
+
+    Returns:
+        LLMClient.chat()에 전달할 메시지 리스트
+    """
+    # 프로필 정보 구성
+    profile_parts = []
+    if profile.get('name'):
+        profile_parts.append(f"이름: {profile['name']}")
+    if profile.get('username'):
+        profile_parts.append(f"사용자명: {profile['username']}")
+    if profile.get('bio'):
+        profile_parts.append(f"자기소개: {profile['bio']}")
+    if profile.get('persona'):
+        profile_parts.append(f"페르소나: {profile['persona'][:2000]}")
+    if profile.get('mbti'):
+        profile_parts.append(f"MBTI: {profile['mbti']}")
+    if profile.get('profession'):
+        profile_parts.append(f"직업: {profile['profession']}")
+    if profile.get('age'):
+        profile_parts.append(f"나이: {profile['age']}")
+    if profile.get('gender'):
+        profile_parts.append(f"성별: {profile['gender']}")
+    if profile.get('country'):
+        profile_parts.append(f"국가: {profile['country']}")
+    if profile.get('interested_topics'):
+        topics = profile['interested_topics']
+        if isinstance(topics, list):
+            profile_parts.append(f"관심 주제: {', '.join(topics)}")
+        else:
+            profile_parts.append(f"관심 주제: {topics}")
+
+    profile_text = "\n".join(profile_parts)
+
+    # 행동 이력 구성
+    history_text = ""
+    if action_history:
+        history_items = []
+        for action in action_history:
+            action_type = action.get('type', '')
+            platform = action.get('platform', '')
+
+            if action_type == 'post':
+                history_items.append(f"[{platform} 게시물] {action.get('content', '')}")
+            elif action_type == 'comment':
+                history_items.append(f"[{platform} 댓글] {action.get('content', '')}")
+            elif action_type == 'trace':
+                act = action.get('action', '')
+                info = action.get('info', '')
+                history_items.append(f"[{platform} {act}] {info}")
+
+        history_text = "\n".join(history_items)
+    else:
+        history_text = "(시뮬레이션 중 기록된 활동이 없습니다)"
+
+    system_prompt = (
+        "당신은 아래 프로필의 페르소나입니다. "
+        "프로필 정보와 시뮬레이션 중 실제 활동 이력을 기반으로 답변하세요. "
+        "반드시 한국어로 답변하세요. "
+        "이 페르소나의 성격, 말투, 관점을 유지하며 일관성 있게 답변해 주세요."
+    )
+
+    user_message = (
+        f"## 에이전트 프로필\n{profile_text}\n\n"
+        f"## 시뮬레이션 중 활동 이력 (최근 순)\n{history_text}\n\n"
+        f"## 질문\n{question}"
+    )
+
+    return [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_message},
+    ]
+
+
+@simulation_bp.route('/<simulation_id>/interview/llm', methods=['POST'])
+def interview_agent_llm(simulation_id: str):
+    """
+    LLM 기반 폴백 인터뷰
+
+    시뮬레이션 프로세스가 실행 중이 아닐 때 사용하는 LLM 직접 호출 인터뷰 엔드포인트.
+    에이전트 프로필과 시뮬레이션 DB의 행동 이력을 기반으로 LLM이 페르소나로서 답변합니다.
+
+    요청 (JSON):
+        {
+            "interviews": [
+                {
+                    "agent_id": 0,
+                    "prompt": "이 정책에 대해 어떻게 생각하시나요?"
+                },
+                {
+                    "agent_id": 1,
+                    "prompt": "최근 시장 동향에 대한 의견은?"
+                }
+            ]
+        }
+
+    반환:
+        {
+            "success": true,
+            "data": {
+                "interviews_count": 2,
+                "results": {
+                    "0": {
+                        "agent_id": 0,
+                        "response": "제 분석에 따르면...",
+                        "timestamp": "2026-03-16T10:00:00",
+                        "source": "llm_fallback"
+                    },
+                    "1": {
+                        "agent_id": 1,
+                        "response": "시장 동향을 보면...",
+                        "timestamp": "2026-03-16T10:00:01",
+                        "source": "llm_fallback"
+                    }
+                }
+            }
+        }
+    """
+    try:
+        data = request.get_json() or {}
+        interviews = data.get('interviews')
+
+        if not interviews or not isinstance(interviews, list):
+            return jsonify({
+                "success": False,
+                "error": "interviews (인터뷰 목록)를 입력해 주세요"
+            }), 400
+
+        # 각 인터뷰 항목 검증
+        for i, interview in enumerate(interviews):
+            if 'agent_id' not in interview:
+                return jsonify({
+                    "success": False,
+                    "error": f"인터뷰 목록 {i+1}번째 항목에 agent_id가 없습니다"
+                }), 400
+            if 'prompt' not in interview:
+                return jsonify({
+                    "success": False,
+                    "error": f"인터뷰 목록 {i+1}번째 항목에 prompt가 없습니다"
+                }), 400
+
+        # 시뮬레이션 디렉토리 존재 여부 확인
+        simulation_dir = os.path.join(Config.OASIS_SIMULATION_DATA_DIR, simulation_id)
+        if not os.path.exists(simulation_dir):
+            return jsonify({
+                "success": False,
+                "error": f"시뮬레이션 디렉토리가 존재하지 않습니다: {simulation_id}"
+            }), 404
+
+        # LLM 클라이언트 초기화
+        try:
+            llm_client = LLMClient()
+        except Exception as e:
+            logger.error(f"LLM 클라이언트 초기화 실패: {e}")
+            return jsonify({
+                "success": False,
+                "error": f"LLM 클라이언트 초기화 실패: {str(e)}"
+            }), 500
+
+        results = {}
+        from datetime import datetime
+
+        for interview in interviews:
+            agent_id = interview['agent_id']
+            prompt = interview['prompt']
+
+            try:
+                # 에이전트 프로필 로드
+                profile = _load_agent_profile(simulation_id, agent_id)
+
+                # 에이전트 행동 이력 로드 (최대 20건)
+                action_history = _load_agent_action_history(simulation_id, agent_id, limit=20)
+
+                # LLM 프롬프트 구성
+                messages = _build_llm_interview_prompt(profile, action_history, prompt)
+
+                # LLM 호출
+                response_text = llm_client.chat(
+                    messages=messages,
+                    temperature=0.7,
+                    max_tokens=2048,
+                )
+
+                results[str(agent_id)] = {
+                    "agent_id": agent_id,
+                    "response": response_text,
+                    "timestamp": datetime.now().isoformat(),
+                    "source": "llm_fallback"
+                }
+
+                logger.info(f"LLM 폴백 인터뷰 완료: simulation={simulation_id}, agent_id={agent_id}")
+
+            except FileNotFoundError as e:
+                logger.warning(f"프로필 파일 없음: {e}")
+                results[str(agent_id)] = {
+                    "agent_id": agent_id,
+                    "response": None,
+                    "error": f"프로필 파일을 찾을 수 없습니다: {str(e)}",
+                    "timestamp": datetime.now().isoformat(),
+                    "source": "llm_fallback"
+                }
+
+            except IndexError as e:
+                logger.warning(f"에이전트 프로필 없음: {e}")
+                results[str(agent_id)] = {
+                    "agent_id": agent_id,
+                    "response": None,
+                    "error": f"해당 에이전트 프로필이 없습니다: {str(e)}",
+                    "timestamp": datetime.now().isoformat(),
+                    "source": "llm_fallback"
+                }
+
+            except Exception as e:
+                logger.error(f"LLM 인터뷰 실패 (agent_id={agent_id}): {str(e)}")
+                results[str(agent_id)] = {
+                    "agent_id": agent_id,
+                    "response": None,
+                    "error": f"LLM 호출 실패: {str(e)}",
+                    "timestamp": datetime.now().isoformat(),
+                    "source": "llm_fallback"
+                }
+
+        return jsonify({
+            "success": True,
+            "data": {
+                "interviews_count": len(results),
+                "results": results
+            }
+        })
+
+    except Exception as e:
+        logger.error(f"LLM 폴백 인터뷰 처리 실패: {str(e)}")
         return jsonify({
             "success": False,
             "error": str(e),
