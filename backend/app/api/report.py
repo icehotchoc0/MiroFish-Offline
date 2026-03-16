@@ -6,11 +6,12 @@ Report API 라우트
 import os
 import traceback
 import threading
-from flask import request, jsonify, send_file
+from flask import request, jsonify, send_file, current_app
 
 from . import report_bp
 from ..config import Config
 from ..services.report_agent import ReportAgent, ReportManager, ReportStatus
+from ..services.graph_tools import GraphToolsService
 from ..services.simulation_manager import SimulationManager
 from ..models.project import ProjectManager
 from ..models.task import TaskManager, TaskStatus
@@ -131,10 +132,16 @@ def generate_report():
                 )
                 
                 # Report Agent 생성
+                from flask import current_app as app
+                storage = app.extensions.get('neo4j_storage')
+                if not storage:
+                    raise ValueError("GraphStorage not initialized — check Neo4j connection")
+                graph_tools = GraphToolsService(storage=storage)
                 agent = ReportAgent(
                     graph_id=graph_id,
                     simulation_id=simulation_id,
-                    simulation_requirement=simulation_requirement
+                    simulation_requirement=simulation_requirement,
+                    graph_tools=graph_tools
                 )
                 
                 # 진행 상황 콜백
@@ -537,10 +544,15 @@ def chat_with_report_agent():
         simulation_requirement = project.simulation_requirement or ""
         
         # Agent 생성 및 대화 진행
+        storage = current_app.extensions.get('neo4j_storage')
+        if not storage:
+            raise ValueError("GraphStorage not initialized — check Neo4j connection")
+        graph_tools = GraphToolsService(storage=storage)
         agent = ReportAgent(
             graph_id=graph_id,
             simulation_id=simulation_id,
-            simulation_requirement=simulation_requirement
+            simulation_requirement=simulation_requirement,
+            graph_tools=graph_tools
         )
         
         result = agent.chat(message=message, chat_history=chat_history)
