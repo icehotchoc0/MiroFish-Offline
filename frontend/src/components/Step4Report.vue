@@ -8,7 +8,7 @@
           <!-- Report Header -->
           <div class="report-header-block">
             <div class="report-meta">
-              <span class="report-tag">Prediction Report</span>
+              <span class="report-tag">예측 보고서</span>
               <span class="report-id">ID: {{ reportId || 'REF-2024-X92' }}</span>
             </div>
             <h1 class="main-title">{{ reportOutline.title }}</h1>
@@ -58,7 +58,7 @@
                       <path d="M12 2a10 10 0 0 1 10 10" stroke-width="4" stroke="#4B5563" stroke-linecap="round"></path>
                     </svg>
                   </div>
-                  <span class="loading-text">Generating {{ section.title }}...</span>
+                  <span class="loading-text">{{ section.title }} 생성 중...</span>
                 </div>
               </div>
             </div>
@@ -72,7 +72,7 @@
             <div class="waiting-ring"></div>
             <div class="waiting-ring"></div>
           </div>
-          <span class="waiting-text">Waiting for Report Agent...</span>
+          <span class="waiting-text">보고서 에이전트 대기 중...</span>
         </div>
       </div>
 
@@ -89,15 +89,15 @@
         <div class="workflow-overview" v-if="agentLogs.length > 0 || reportOutline">
           <div class="workflow-metrics">
             <div class="metric">
-              <span class="metric-label">Sections</span>
+              <span class="metric-label">섹션</span>
               <span class="metric-value mono">{{ completedSections }}/{{ totalSections }}</span>
             </div>
             <div class="metric">
-              <span class="metric-label">Elapsed</span>
+              <span class="metric-label">경과 시간</span>
               <span class="metric-value mono">{{ formatElapsedTime }}</span>
             </div>
             <div class="metric">
-              <span class="metric-label">Tools</span>
+              <span class="metric-label">도구</span>
               <span class="metric-value mono">{{ totalToolCalls }}</span>
             </div>
             <div class="metric metric-right">
@@ -166,7 +166,7 @@
                   <!-- Report Start -->
                   <template v-if="log.action === 'report_start'">
                     <div class="info-row">
-                      <span class="info-key">Simulation</span>
+                      <span class="info-key">시뮬레이션</span>
                       <span class="info-val mono">{{ log.details?.simulation_id }}</span>
                     </div>
                     <div class="info-row" v-if="log.details?.simulation_requirement">
@@ -334,7 +334,7 @@
                         <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
                         <polyline points="22 4 12 14.01 9 11.01"></polyline>
                       </svg>
-                      <span>Report Generation Complete</span>
+                      <span>보고서 생성 완료</span>
                     </div>
                   </template>
                 </div>
@@ -368,7 +368,7 @@
           <!-- Empty State -->
           <div v-if="agentLogs.length === 0 && !isComplete" class="workflow-empty">
             <div class="empty-pulse"></div>
-            <span>Waiting for agent activity...</span>
+            <span>에이전트 활동 대기 중...</span>
           </div>
         </div>
       </div>
@@ -500,17 +500,17 @@ const toolConfig = {
     icon: 'lightbulb' // Lightbulb icon - represents insight
   },
   'panorama_search': {
-    name: 'Panorama Search',
+    name: '파노라마 검색',
     color: 'blue',
     icon: 'globe' // Globe icon - represents panorama search
   },
   'interview_agents': {
-    name: 'Agent Interview',
+    name: '에이전트 인터뷰',
     color: 'green',
     icon: 'users' // User icon - represents conversation
   },
   'quick_search': {
-    name: 'Quick Search',
+    name: '빠른 검색',
     color: 'orange',
     icon: 'zap' // Lightning icon - represents speed
   },
@@ -559,7 +559,7 @@ const parseInsightForge = (text) => {
     const reqMatch = text.match(/预测场景:\s*(.+?)(?:\n|$)/)
     if (reqMatch) result.simulationRequirement = reqMatch[1].trim()
 
-    // Extract statistics - match "相关预测事实: X条" format
+    // Extract statistics - match "相关预测事实: X条" format (backend Chinese output)
     const factMatch = text.match(/相关预测事实:\s*(\d+)/)
     const entityMatch = text.match(/涉及实体:\s*(\d+)/)
     const relMatch = text.match(/关系链:\s*(\d+)/)
@@ -1152,7 +1152,7 @@ const PanoramaDisplay = {
       // Header Section
       h('div', { class: 'panorama-header' }, [
         h('div', { class: 'header-main' }, [
-          h('div', { class: 'header-title' }, 'Panorama Search'),
+          h('div', { class: 'header-title' }, '파노라마 검색'),
           h('div', { class: 'header-stats' }, [
             h('span', { class: 'stat-item' }, [
               h('span', { class: 'stat-value' }, props.result.stats.nodes),
@@ -1327,7 +1327,7 @@ const InterviewDisplay = {
     const isPlaceholderText = (text) => {
       if (!text) return true
       const t = text.trim()
-      return t === '（该平台未获得回复）' || t === '(该平台未获得回复)' || t === '[无回复]'
+      return t === '（该平台未获得回复）' || t === '(该平台未获得回复)' || t === '[无回复]' || t === '(해당 플랫폼에서 응답 없음)' || t === '[응답 없음]'
     }
 
     // Try to split answer by question numbering
@@ -1336,12 +1336,12 @@ const InterviewDisplay = {
       if (isPlaceholderText(answerText)) return ['']
 
       // Support two numbering formats:
-      // 1. "问题X：" or "问题X:" (Chinese format, new backend format)
+      // 1. "问题X：" or "问题X:" (Chinese format from backend)
       // 2. "1. " or "\n1. " (number+dot, old format compatible)
       let matches = []
       let match
 
-      // Prefer to try "问题X：" format
+      // Prefer to try "问题X：" format (Chinese question numbering from backend)
       const cnPattern = /(?:^|[\r\n]+)问题(\d+)[：:]\s*/g
       while ((match = cnPattern.exec(answerText)) !== null) {
         matches.push({
@@ -1423,11 +1423,11 @@ const InterviewDisplay = {
       // Header Section
       h('div', { class: 'interview-header' }, [
         h('div', { class: 'header-main' }, [
-          h('div', { class: 'header-title' }, 'Agent Interview'),
+          h('div', { class: 'header-title' }, '에이전트 인터뷰'),
           h('div', { class: 'header-stats' }, [
             h('span', { class: 'stat-item' }, [
               h('span', { class: 'stat-value' }, props.result.successCount || props.result.interviews.length),
-              h('span', { class: 'stat-label' }, 'Interviewed')
+              h('span', { class: 'stat-label' }, '인터뷰 완료')
             ]),
             props.result.totalCount > 0 && h('span', { class: 'stat-divider' }, '/'),
             props.result.totalCount > 0 && h('span', { class: 'stat-item' }, [
@@ -1490,7 +1490,7 @@ const InterviewDisplay = {
               h('div', { class: 'qa-question' }, [
                 h('div', { class: 'qa-badge q-badge' }, `Q${qIdx + 1}`),
                 h('div', { class: 'qa-content' }, [
-                  h('div', { class: 'qa-sender' }, 'Interviewer'),
+                  h('div', { class: 'qa-sender' }, '인터뷰어'),
                   h('div', { class: 'qa-text' }, question)
                 ])
               ]),
@@ -1563,7 +1563,7 @@ const InterviewDisplay = {
 
       // Summary Section (Collapsible)
       props.result.summary && h('div', { class: 'summary-section' }, [
-        h('div', { class: 'summary-header' }, 'Interview Summary'),
+        h('div', { class: 'summary-header' }, '인터뷰 요약'),
         h('div', { 
           class: 'summary-content',
           innerHTML: renderMarkdown(props.result.summary.length > 500 ? props.result.summary.substring(0, 500) + '...' : props.result.summary)
@@ -1599,7 +1599,7 @@ const QuickSearchDisplay = {
       // Header Section
       h('div', { class: 'quicksearch-header' }, [
         h('div', { class: 'header-main' }, [
-          h('div', { class: 'header-title' }, 'Quick Search'),
+          h('div', { class: 'header-title' }, '빠른 검색'),
           h('div', { class: 'header-stats' }, [
             h('span', { class: 'stat-item' }, [
               h('span', { class: 'stat-value' }, props.result.count || props.result.facts.length),
@@ -1610,7 +1610,7 @@ const QuickSearchDisplay = {
           ])
         ]),
         props.result.query && h('div', { class: 'header-query' }, [
-          h('span', { class: 'query-label' }, 'Search: '),
+          h('span', { class: 'query-label' }, '검색: '),
           h('span', { class: 'query-text' }, props.result.query)
         ])
       ]),
@@ -1642,7 +1642,7 @@ const QuickSearchDisplay = {
         // Facts (always show if no tabs, or when facts tab is active)
         ((!showTabs.value) || activeTab.value === 'facts') && h('div', { class: 'facts-panel' }, [
           !showTabs.value && h('div', { class: 'panel-header' }, [
-            h('span', { class: 'panel-title' }, 'Search Results'),
+            h('span', { class: 'panel-title' }, '검색 결과'),
             h('span', { class: 'panel-count' }, `Total ${props.result.facts.length} items`)
           ]),
           props.result.facts.length > 0 ? h('div', { class: 'facts-list' },
@@ -1708,9 +1708,9 @@ const statusClass = computed(() => {
 })
 
 const statusText = computed(() => {
-  if (isComplete.value) return 'Completed'
-  if (agentLogs.value.length > 0) return 'Generating...'
-  return 'Waiting'
+  if (isComplete.value) return '완료'
+  if (agentLogs.value.length > 0) return '생성 중...'
+  return '대기 중'
 })
 
 const totalSections = computed(() => {
@@ -2006,8 +2006,8 @@ const getActionLabel = (action) => {
 }
 
 const getLogLevelClass = (log) => {
-  if (log.includes('ERROR') || log.includes('错误')) return 'error'
-  if (log.includes('WARNING') || log.includes('警告')) return 'warning'
+  if (log.includes('ERROR') || log.includes('오류')) return 'error'
+  if (log.includes('WARNING') || log.includes('경고')) return 'warning'
   // INFO uses default color, not marked as success
   return ''
 }

@@ -1,12 +1,12 @@
 """
-MiroFish Backend - Flask应用工厂
+MiroFish Backend - Flask 애플리케이션 팩토리
 """
 
 import os
 import warnings
 
-# 抑制 multiprocessing resource_tracker 的警告（来自第三方库如 transformers）
-# 需要在所有其他导入之前设置
+# multiprocessing resource_tracker 경고 억제 (transformers 등 서드파티 라이브러리에서 발생)
+# 다른 모든 import 전에 설정 필요
 warnings.filterwarnings("ignore", message=".*resource_tracker.*")
 
 from flask import Flask, request
@@ -17,76 +17,76 @@ from .utils.logger import setup_logger, get_logger
 
 
 def create_app(config_class=Config):
-    """Flask应用工厂函数"""
+    """Flask 애플리케이션 팩토리 함수"""
     app = Flask(__name__)
     app.config.from_object(config_class)
     
-    # 设置JSON编码：确保中文直接显示（而不是 \uXXXX 格式）
-    # Flask >= 2.3 使用 app.json.ensure_ascii，旧版本使用 JSON_AS_ASCII 配置
+    # JSON 인코딩 설정: 비ASCII 문자 직접 표시 보장 (\uXXXX 형식 대신)
+    # Flask >= 2.3은 app.json.ensure_ascii 사용, 이전 버전은 JSON_AS_ASCII 설정 사용
     if hasattr(app, 'json') and hasattr(app.json, 'ensure_ascii'):
         app.json.ensure_ascii = False
     
-    # 设置日志
+    # 로그 설정
     logger = setup_logger('mirofish')
     
-    # 只在 reloader 子进程中打印启动信息（避免 debug 模式下打印两次）
+    # reloader 하위 프로세스에서만 시작 정보 출력 (debug 모드에서 두 번 출력 방지)
     is_reloader_process = os.environ.get('WERKZEUG_RUN_MAIN') == 'true'
     debug_mode = app.config.get('DEBUG', False)
     should_log_startup = not debug_mode or is_reloader_process
     
     if should_log_startup:
         logger.info("=" * 50)
-        logger.info("MiroFish-Offline Backend 启动中...")
+        logger.info("MiroFish-Offline Backend 시작 중...")
         logger.info("=" * 50)
     
-    # 启用CORS
+    # CORS 활성화
     CORS(app, resources={r"/api/*": {"origins": "*"}})
 
-    # --- 初始化 Neo4jStorage 单例（DI via app.extensions） ---
+    # --- Neo4jStorage 싱글톤 초기화 (DI via app.extensions) ---
     from .storage import Neo4jStorage
     try:
         neo4j_storage = Neo4jStorage()
         app.extensions['neo4j_storage'] = neo4j_storage
         if should_log_startup:
-            logger.info("Neo4jStorage 已初始化（连接 %s）", Config.NEO4J_URI)
+            logger.info("Neo4jStorage 초기화 완료 (연결: %s)", Config.NEO4J_URI)
     except Exception as e:
-        logger.error("Neo4jStorage 初始化失败: %s", e)
+        logger.error("Neo4jStorage 초기화 실패: %s", e)
         # Store None so endpoints can return 503 gracefully
         app.extensions['neo4j_storage'] = None
     
-    # 注册模拟进程清理函数（确保服务器关闭时终止所有模拟进程）
+    # 시뮬레이션 프로세스 정리 함수 등록 (서버 종료 시 모든 시뮬레이션 프로세스 종료 보장)
     from .services.simulation_runner import SimulationRunner
     SimulationRunner.register_cleanup()
     if should_log_startup:
-        logger.info("已注册模拟进程清理函数")
+        logger.info("시뮬레이션 프로세스 정리 함수 등록됨")
     
-    # 请求日志中间件
+    # 요청 로그 미들웨어
     @app.before_request
     def log_request():
         logger = get_logger('mirofish.request')
-        logger.debug(f"请求: {request.method} {request.path}")
+        logger.debug(f"요청: {request.method} {request.path}")
         if request.content_type and 'json' in request.content_type:
-            logger.debug(f"请求体: {request.get_json(silent=True)}")
+            logger.debug(f"요청 본문: {request.get_json(silent=True)}")
     
     @app.after_request
     def log_response(response):
         logger = get_logger('mirofish.request')
-        logger.debug(f"响应: {response.status_code}")
+        logger.debug(f"응답: {response.status_code}")
         return response
     
-    # 注册蓝图
+    # 블루프린트 등록
     from .api import graph_bp, simulation_bp, report_bp
     app.register_blueprint(graph_bp, url_prefix='/api/graph')
     app.register_blueprint(simulation_bp, url_prefix='/api/simulation')
     app.register_blueprint(report_bp, url_prefix='/api/report')
     
-    # 健康检查
+    # 헬스 체크
     @app.route('/health')
     def health():
         return {'status': 'ok', 'service': 'MiroFish-Offline Backend'}
     
     if should_log_startup:
-        logger.info("MiroFish-Offline Backend 启动完成")
+        logger.info("MiroFish-Offline Backend 시작 완료")
     
     return app
 

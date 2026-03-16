@@ -1,5 +1,5 @@
 <template>
-  <div 
+  <div
     class="history-database"
     :class="{ 'no-projects': projects.length === 0 && !loading }"
     ref="historyContainer"
@@ -13,14 +13,14 @@
     <!-- Title section -->
     <div class="section-header">
       <div class="section-line"></div>
-      <span class="section-title">Simulation Records</span>
+      <span class="section-title">시뮬레이션 기록</span>
       <div class="section-line"></div>
     </div>
 
     <!-- Card container (only shown when there are projects) -->
     <div v-if="projects.length > 0" class="cards-container" :class="{ expanded: isExpanded }" :style="containerStyle">
-      <div 
-        v-for="(project, index) in projects" 
+      <div
+        v-for="(project, index) in projects"
         :key="project.simulation_id"
         class="project-card"
         :class="{ expanded: isExpanded, hovering: hoveringCard === index }"
@@ -36,16 +36,16 @@
             <span
               class="status-icon"
               :class="{ available: project.project_id, unavailable: !project.project_id }"
-              title="Graph Construction"
+              title="그래프 구축"
             >◇</span>
             <span
               class="status-icon available"
-              title="Environment Setup"
+              title="환경 설정"
             >◈</span>
             <span
               class="status-icon"
               :class="{ available: project.report_id, unavailable: !project.report_id }"
-              title="Analysis Report"
+              title="분석 보고서"
             >◆</span>
           </div>
         </div>
@@ -57,8 +57,8 @@
 
           <!-- File list -->
           <div class="files-list" v-if="project.files && project.files.length > 0">
-            <div 
-              v-for="(file, fileIndex) in project.files.slice(0, 3)" 
+            <div
+              v-for="(file, fileIndex) in project.files.slice(0, 3)"
               :key="fileIndex"
               class="file-item"
             >
@@ -67,13 +67,13 @@
             </div>
             <!-- If there are more files, show indicator -->
             <div v-if="project.files.length > 3" class="files-more">
-              +{{ project.files.length - 3 }} files
+              +{{ project.files.length - 3 }} 파일
             </div>
           </div>
           <!-- Placeholder when no files -->
           <div class="files-empty" v-else>
             <span class="empty-file-icon">◇</span>
-            <span class="empty-file-text">No Files</span>
+            <span class="empty-file-text">파일 없음</span>
           </div>
         </div>
 
@@ -102,7 +102,7 @@
     <!-- Loading state -->
     <div v-if="loading" class="loading-state">
       <span class="loading-spinner"></span>
-      <span class="loading-text">Loading...</span>
+      <span class="loading-text">불러오는 중...</span>
     </div>
 
     <!-- Simulation playback details modal -->
@@ -126,27 +126,27 @@
             <div class="modal-body">
               <!-- Simulation requirement -->
               <div class="modal-section">
-                <div class="modal-label">Simulation Requirement</div>
-                <div class="modal-requirement">{{ selectedProject.simulation_requirement || 'None' }}</div>
+                <div class="modal-label">시뮬레이션 요구사항</div>
+                <div class="modal-requirement">{{ selectedProject.simulation_requirement || '없음' }}</div>
               </div>
 
               <!-- File list -->
               <div class="modal-section">
-                <div class="modal-label">Associated Files</div>
+                <div class="modal-label">관련 파일</div>
                 <div class="modal-files" v-if="selectedProject.files && selectedProject.files.length > 0">
                   <div v-for="(file, index) in selectedProject.files" :key="index" class="modal-file-item">
                     <span class="file-tag" :class="getFileType(file.filename)">{{ getFileTypeLabel(file.filename) }}</span>
                     <span class="modal-file-name">{{ file.filename }}</span>
                   </div>
                 </div>
-                <div class="modal-empty" v-else>No Associated Files</div>
+                <div class="modal-empty" v-else>관련 파일 없음</div>
               </div>
             </div>
 
             <!-- Simulation playback divider -->
             <div class="modal-divider">
               <span class="divider-line"></span>
-              <span class="divider-text">Simulation Playback</span>
+              <span class="divider-text">시뮬레이션 재생</span>
               <span class="divider-line"></span>
             </div>
 
@@ -159,7 +159,7 @@
               >
                 <span class="btn-step">Step1</span>
                 <span class="btn-icon">◇</span>
-                <span class="btn-text">Graph Construction</span>
+                <span class="btn-text">그래프 구축</span>
               </button>
               <button
                 class="modal-btn btn-simulation"
@@ -167,7 +167,7 @@
               >
                 <span class="btn-step">Step2</span>
                 <span class="btn-icon">◈</span>
-                <span class="btn-text">Environment Setup</span>
+                <span class="btn-text">환경 설정</span>
               </button>
               <button
                 class="modal-btn btn-report"
@@ -176,12 +176,12 @@
               >
                 <span class="btn-step">Step4</span>
                 <span class="btn-icon">◆</span>
-                <span class="btn-text">Analysis Report</span>
+                <span class="btn-text">분석 보고서</span>
               </button>
             </div>
             <!-- Playback unavailable notice -->
             <div class="modal-playback-hint">
-              <span class="hint-text">Step3 "Start Simulation" and Step5 "Deep Interaction" must be launched during execution and do not support history playback</span>
+              <span class="hint-text">Step3 "시뮬레이션 시작"과 Step5 "심층 상호작용"은 실행 중에만 작동하며 기록 재생을 지원하지 않습니다</span>
             </div>
           </div>
         </div>
@@ -337,7 +337,7 @@ const truncateText = (text, maxLength) => {
 
 // Generate title from simulation requirement (first 20 characters)
 const getSimulationTitle = (requirement) => {
-  if (!requirement) return 'Unnamed Simulation'
+  if (!requirement) return '이름 없는 시뮬레이션'
   const title = requirement.slice(0, 20)
   return requirement.length > 20 ? title + '...' : title
 }
@@ -353,8 +353,8 @@ const formatSimulationId = (simulationId) => {
 const formatRounds = (simulation) => {
   const current = simulation.current_round || 0
   const total = simulation.total_rounds || 0
-  if (total === 0) return 'Not Started'
-  return `${current}/${total} rounds`
+  if (total === 0) return '시작 전'
+  return `${current}/${total} 라운드`
 }
 
 // Get file type (for styling)
@@ -382,7 +382,7 @@ const getFileTypeLabel = (filename) => {
 
 // Truncate filename (preserve extension)
 const truncateFilename = (filename, maxLength) => {
-  if (!filename) return 'Unknown File'
+  if (!filename) return '알 수 없는 파일'
   if (filename.length <= maxLength) return filename
 
   const ext = filename.includes('.') ? '.' + filename.split('.').pop() : ''
@@ -617,7 +617,7 @@ onUnmounted(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: 
+  background:
     linear-gradient(to right, rgba(255, 255, 255, 0.9) 0%, transparent 15%, transparent 85%, rgba(255, 255, 255, 0.9) 100%),
     linear-gradient(to bottom, rgba(255, 255, 255, 0.8) 0%, transparent 20%, transparent 80%, rgba(255, 255, 255, 0.8) 100%);
   pointer-events: none;

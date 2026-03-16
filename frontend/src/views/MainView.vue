@@ -15,14 +15,14 @@
             :class="{ active: viewMode === mode }"
             @click="viewMode = mode"
           >
-            {{ { graph: 'Graph', split: 'Split', workbench: 'Workbench' }[mode] }}
+            {{ { graph: '그래프', split: '분할', workbench: '워크벤치' }[mode] }}
           </button>
         </div>
       </div>
 
       <div class="header-right">
         <div class="workflow-step">
-          <span class="step-num">Step {{ currentStep }}/5</span>
+          <span class="step-num">{{ currentStep }}/5 단계</span>
           <span class="step-name">{{ stepNames[currentStep - 1] }}</span>
         </div>
         <div class="step-divider"></div>
@@ -91,7 +91,7 @@ const viewMode = ref('split') // graph | split | workbench
 
 // Step State
 const currentStep = ref(1) // 1: Graph Build, 2: Env Setup, 3: Simulation, 4: Report, 5: Interaction
-const stepNames = ['Graph Build', 'Env Setup', 'Simulation', 'Report', 'Interaction']
+const stepNames = ['그래프 구축', '환경 설정', '시뮬레이션', '보고서', '상호작용']
 
 // Data State
 const currentProjectId = ref(route.params.projectId)
@@ -130,11 +130,11 @@ const statusClass = computed(() => {
 })
 
 const statusText = computed(() => {
-  if (error.value) return 'Error'
-  if (currentPhase.value >= 2) return 'Ready'
+  if (error.value) return '오류'
+  if (currentPhase.value >= 2) return '준비 완료'
   if (currentPhase.value === 1) return 'Building Graph'
   if (currentPhase.value === 0) return 'Generating Ontology'
-  return 'Initializing'
+  return '초기화 중'
 })
 
 // --- Helpers ---

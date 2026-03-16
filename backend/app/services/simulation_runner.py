@@ -1,6 +1,6 @@
 """
-OASIS模拟运行器
-在后台运行模拟并记录每个Agent的动作，支持实时状态监控
+OASIS 시뮬레이션 러너
+백그라운드에서 시뮬레이션을 실행하고 각 Agent의 동작을 기록, 실시간 상태 모니터링 지원
 """
 
 import os
@@ -25,15 +25,15 @@ from .simulation_ipc import SimulationIPCClient, CommandType, IPCResponse
 
 logger = get_logger('mirofish.simulation_runner')
 
-# 标记是否已注册清理函数
+# 클린업 함수 등록 여부 표시
 _cleanup_registered = False
 
-# 平台检测
+# 플랫폼 감지
 IS_WINDOWS = sys.platform == 'win32'
 
 
 class RunnerStatus(str, Enum):
-    """运行器状态"""
+    """러너 상태"""
     IDLE = "idle"
     STARTING = "starting"
     RUNNING = "running"
@@ -46,7 +46,7 @@ class RunnerStatus(str, Enum):
 
 @dataclass
 class AgentAction:
-    """Agent动作记录"""
+    """Agent 동작 기록"""
     round_num: int
     timestamp: str
     platform: str  # twitter / reddit
@@ -73,7 +73,7 @@ class AgentAction:
 
 @dataclass
 class RoundSummary:
-    """每轮摘要"""
+    """각 라운드 요약"""
     round_num: int
     start_time: str
     end_time: Optional[str] = None
@@ -99,52 +99,52 @@ class RoundSummary:
 
 @dataclass
 class SimulationRunState:
-    """模拟运行状态（实时）"""
+    """시뮬레이션 실행 상태 (실시간)"""
     simulation_id: str
     runner_status: RunnerStatus = RunnerStatus.IDLE
     
-    # 进度信息
+    # 진행 정보
     current_round: int = 0
     total_rounds: int = 0
     simulated_hours: int = 0
     total_simulation_hours: int = 0
     
-    # 各平台独立轮次和模拟时间（用于双平台并行显示）
+    # 각 플랫폼 독립 라운드 및 시뮬레이션 시간 (듀얼 플랫폼 병렬 표시용)
     twitter_current_round: int = 0
     reddit_current_round: int = 0
     twitter_simulated_hours: int = 0
     reddit_simulated_hours: int = 0
     
-    # 平台状态
+    # 플랫폼 상태
     twitter_running: bool = False
     reddit_running: bool = False
     twitter_actions_count: int = 0
     reddit_actions_count: int = 0
     
-    # 平台完成状态（通过检测 actions.jsonl 中的 simulation_end 事件）
+    # 플랫폼 완료 상태 (actions.jsonl의 simulation_end 이벤트 감지를 통해)
     twitter_completed: bool = False
     reddit_completed: bool = False
     
-    # 每轮摘要
+    # 각 라운드 요약
     rounds: List[RoundSummary] = field(default_factory=list)
     
-    # 最近动作（用于前端实时展示）
+    # 최근 동작 (프론트엔드 실시간 표시용)
     recent_actions: List[AgentAction] = field(default_factory=list)
     max_recent_actions: int = 50
     
-    # 时间戳
+    # 타임스탬프
     started_at: Optional[str] = None
     updated_at: str = field(default_factory=lambda: datetime.now().isoformat())
     completed_at: Optional[str] = None
     
-    # 错误信息
+    # 오류 정보
     error: Optional[str] = None
-    
-    # 进程ID（用于停止）
+
+    # 프로세스 ID (중지용)
     process_pid: Optional[int] = None
     
     def add_action(self, action: AgentAction):
-        """添加动作到最近动作列表"""
+        """최근 동작 목록에 동작 추가"""
         self.recent_actions.insert(0, action)
         if len(self.recent_actions) > self.max_recent_actions:
             self.recent_actions = self.recent_actions[:self.max_recent_actions]
@@ -165,7 +165,7 @@ class SimulationRunState:
             "simulated_hours": self.simulated_hours,
             "total_simulation_hours": self.total_simulation_hours,
             "progress_percent": round(self.current_round / max(self.total_rounds, 1) * 100, 1),
-            # 各平台独立轮次和时间
+            # 각 플랫폼 독립 라운드 및 시간
             "twitter_current_round": self.twitter_current_round,
             "reddit_current_round": self.reddit_current_round,
             "twitter_simulated_hours": self.twitter_simulated_hours,
@@ -185,7 +185,7 @@ class SimulationRunState:
         }
     
     def to_detail_dict(self) -> Dict[str, Any]:
-        """包含最近动作的详细信息"""
+        """최근 동작을 포함한 상세 정보"""
         result = self.to_dict()
         result["recent_actions"] = [a.to_dict() for a in self.recent_actions]
         result["rounds_count"] = len(self.rounds)
@@ -194,45 +194,45 @@ class SimulationRunState:
 
 class SimulationRunner:
     """
-    模拟运行器
-    
-    负责：
-    1. 在后台进程中运行OASIS模拟
-    2. 解析运行日志，记录每个Agent的动作
-    3. 提供实时状态查询接口
-    4. 支持暂停/停止/恢复操作
+    시뮬레이션 러너
+
+    담당:
+    1. 백그라운드 프로세스에서 OASIS 시뮬레이션 실행
+    2. 실행 로그 파싱, 각 Agent의 동작 기록
+    3. 실시간 상태 조회 인터페이스 제공
+    4. 일시정지/중지/재개 작업 지원
     """
     
-    # 运行状态存储目录
+    # 실행 상태 저장 디렉토리
     RUN_STATE_DIR = os.path.join(
         os.path.dirname(__file__),
         '../../uploads/simulations'
     )
     
-    # 脚本目录
+    # 스크립트 디렉토리
     SCRIPTS_DIR = os.path.join(
         os.path.dirname(__file__),
         '../../scripts'
     )
     
-    # 内存中的运行状态
+    # 메모리 내 실행 상태
     _run_states: Dict[str, SimulationRunState] = {}
     _processes: Dict[str, subprocess.Popen] = {}
     _action_queues: Dict[str, Queue] = {}
     _monitor_threads: Dict[str, threading.Thread] = {}
-    _stdout_files: Dict[str, Any] = {}  # 存储 stdout 文件句柄
-    _stderr_files: Dict[str, Any] = {}  # 存储 stderr 文件句柄
+    _stdout_files: Dict[str, Any] = {}  # stdout 파일 핸들 저장
+    _stderr_files: Dict[str, Any] = {}  # stderr 파일 핸들 저장
     
-    # 图谱记忆更新配置
+    # 그래프 메모리 업데이트 설정
     _graph_memory_enabled: Dict[str, bool] = {}  # simulation_id -> enabled
     
     @classmethod
     def get_run_state(cls, simulation_id: str) -> Optional[SimulationRunState]:
-        """获取运行状态"""
+        """실행 상태 조회"""
         if simulation_id in cls._run_states:
             return cls._run_states[simulation_id]
         
-        # 尝试从文件加载
+        # 파일에서 로드 시도
         state = cls._load_run_state(simulation_id)
         if state:
             cls._run_states[simulation_id] = state
@@ -240,7 +240,7 @@ class SimulationRunner:
     
     @classmethod
     def _load_run_state(cls, simulation_id: str) -> Optional[SimulationRunState]:
-        """从文件加载运行状态"""
+        """파일에서 실행 상태 로드"""
         state_file = os.path.join(cls.RUN_STATE_DIR, simulation_id, "run_state.json")
         if not os.path.exists(state_file):
             return None
@@ -256,7 +256,7 @@ class SimulationRunner:
                 total_rounds=data.get("total_rounds", 0),
                 simulated_hours=data.get("simulated_hours", 0),
                 total_simulation_hours=data.get("total_simulation_hours", 0),
-                # 各平台独立轮次和时间
+                # 각 플랫폼 독립 라운드 및 시간
                 twitter_current_round=data.get("twitter_current_round", 0),
                 reddit_current_round=data.get("reddit_current_round", 0),
                 twitter_simulated_hours=data.get("twitter_simulated_hours", 0),
@@ -274,7 +274,7 @@ class SimulationRunner:
                 process_pid=data.get("process_pid"),
             )
             
-            # 加载最近动作
+            # 최근 동작 로드
             actions_data = data.get("recent_actions", [])
             for a in actions_data:
                 state.recent_actions.append(AgentAction(
@@ -291,12 +291,12 @@ class SimulationRunner:
             
             return state
         except Exception as e:
-            logger.error(f"加载运行状态失败: {str(e)}")
+            logger.error(f"실행 상태 로드 실패: {str(e)}")
             return None
     
     @classmethod
     def _save_run_state(cls, state: SimulationRunState):
-        """保存运行状态到文件"""
+        """실행 상태를 파일에 저장"""
         sim_dir = os.path.join(cls.RUN_STATE_DIR, state.simulation_id)
         os.makedirs(sim_dir, exist_ok=True)
         state_file = os.path.join(sim_dir, "run_state.json")
@@ -313,9 +313,9 @@ class SimulationRunner:
         cls,
         simulation_id: str,
         platform: str = "parallel",  # twitter / reddit / parallel
-        max_rounds: int = None,  # 最大模拟轮数（可选，用于截断过长的模拟）
-        enable_graph_memory_update: bool = False,  # 是否将活动更新到图谱
-        graph_id: str = None,  # 图谱ID（启用图谱更新时必需）
+        max_rounds: int = None,  # 최대 시뮬레이션 라운드 수 (선택, 과도하게 긴 시뮬레이션 절삭용)
+        enable_graph_memory_update: bool = False,  # 활동을 그래프에 업데이트할지 여부
+        graph_id: str = None,  # 그래프 ID (그래프 업데이트 활성화 시 필수)
         storage: 'GraphStorage' = None  # GraphStorage instance (required if enable_graph_memory_update)
     ) -> SimulationRunState:
         """
@@ -331,33 +331,33 @@ class SimulationRunner:
         Returns:
             SimulationRunState
         """
-        # 检查是否已在运行
+        # 이미 실행 중인지 확인
         existing = cls.get_run_state(simulation_id)
         if existing and existing.runner_status in [RunnerStatus.RUNNING, RunnerStatus.STARTING]:
-            raise ValueError(f"模拟已在运行中: {simulation_id}")
+            raise ValueError(f"시뮬레이션이 이미 실행 중: {simulation_id}")
         
-        # 加载模拟配置
+        # 시뮬레이션 설정 로드
         sim_dir = os.path.join(cls.RUN_STATE_DIR, simulation_id)
         config_path = os.path.join(sim_dir, "simulation_config.json")
         
         if not os.path.exists(config_path):
-            raise ValueError(f"模拟配置不存在，请先调用 /prepare 接口")
+            raise ValueError(f"시뮬레이션 설정이 존재하지 않습니다. 먼저 /prepare 인터페이스를 호출하세요")
         
         with open(config_path, 'r', encoding='utf-8') as f:
             config = json.load(f)
         
-        # 初始化运行状态
+        # 실행 상태 초기화
         time_config = config.get("time_config", {})
         total_hours = time_config.get("total_simulation_hours", 72)
         minutes_per_round = time_config.get("minutes_per_round", 30)
         total_rounds = int(total_hours * 60 / minutes_per_round)
         
-        # 如果指定了最大轮数，则截断
+        # 최대 라운드 수가 지정된 경우 절삭
         if max_rounds is not None and max_rounds > 0:
             original_rounds = total_rounds
             total_rounds = min(total_rounds, max_rounds)
             if total_rounds < original_rounds:
-                logger.info(f"轮数已截断: {original_rounds} -> {total_rounds} (max_rounds={max_rounds})")
+                logger.info(f"라운드 수 절삭: {original_rounds} -> {total_rounds} (max_rounds={max_rounds})")
         
         state = SimulationRunState(
             simulation_id=simulation_id,
@@ -369,24 +369,24 @@ class SimulationRunner:
         
         cls._save_run_state(state)
         
-        # 如果启用图谱记忆更新，创建更新器
+        # 그래프 메모리 업데이트가 활성화된 경우, 업데이터 생성
         if enable_graph_memory_update:
             if not graph_id:
-                raise ValueError("启用图谱记忆更新时必须提供 graph_id")
+                raise ValueError("그래프 메모리 업데이트 활성화 시 graph_id를 제공해야 합니다")
             
             try:
                 if not storage:
-                    raise ValueError("启用图谱记忆更新时必须提供 storage (GraphStorage)")
+                    raise ValueError("그래프 메모리 업데이트 활성화 시 storage (GraphStorage)를 제공해야 합니다")
                 GraphMemoryManager.create_updater(simulation_id, graph_id, storage)
                 cls._graph_memory_enabled[simulation_id] = True
-                logger.info(f"已启用图谱记忆更新: simulation_id={simulation_id}, graph_id={graph_id}")
+                logger.info(f"그래프 메모리 업데이트 활성화됨: simulation_id={simulation_id}, graph_id={graph_id}")
             except Exception as e:
-                logger.error(f"创建图谱记忆更新器失败: {e}")
+                logger.error(f"그래프 메모리 업데이터 생성 실패: {e}")
                 cls._graph_memory_enabled[simulation_id] = False
         else:
             cls._graph_memory_enabled[simulation_id] = False
         
-        # 确定运行哪个脚本（脚本位于 backend/scripts/ 目录）
+        # 실행할 스크립트 결정 (스크립트는 backend/scripts/ 디렉토리에 위치)
         if platform == "twitter":
             script_name = "run_twitter_simulation.py"
             state.twitter_running = True
@@ -401,19 +401,19 @@ class SimulationRunner:
         script_path = os.path.join(cls.SCRIPTS_DIR, script_name)
         
         if not os.path.exists(script_path):
-            raise ValueError(f"脚本不存在: {script_path}")
+            raise ValueError(f"스크립트가 존재하지 않음: {script_path}")
         
-        # 创建动作队列
+        # 동작 큐 생성
         action_queue = Queue()
         cls._action_queues[simulation_id] = action_queue
         
-        # 启动模拟进程
+        # 시뮬레이션 프로세스 시작
         try:
-            # 构建运行命令，使用完整路径
-            # 新的日志结构：
-            #   twitter/actions.jsonl - Twitter 动作日志
-            #   reddit/actions.jsonl  - Reddit 动作日志
-            #   simulation.log        - 主进程日志
+            # 실행 명령 구축, 전체 경로 사용
+            # 새로운 로그 구조:
+            #   twitter/actions.jsonl - Twitter 동작 로그
+            #   reddit/actions.jsonl  - Reddit 동작 로그
+            #   simulation.log        - 메인 프로세스 로그
             
             cmd = [
                 sys.executable,  # Python解释器
@@ -421,44 +421,44 @@ class SimulationRunner:
                 "--config", config_path,  # 使用完整配置文件路径
             ]
             
-            # 如果指定了最大轮数，添加到命令行参数
+            # 최대 라운드 수가 지정된 경우, 명령행 파라미터에 추가
             if max_rounds is not None and max_rounds > 0:
                 cmd.extend(["--max-rounds", str(max_rounds)])
             
-            # 创建主日志文件，避免 stdout/stderr 管道缓冲区满导致进程阻塞
+            # 메인 로그 파일 생성, stdout/stderr 파이프 버퍼 가득 참으로 인한 프로세스 차단 방지
             main_log_path = os.path.join(sim_dir, "simulation.log")
             main_log_file = open(main_log_path, 'w', encoding='utf-8')
             
-            # 设置子进程环境变量，确保 Windows 上使用 UTF-8 编码
-            # 这可以修复第三方库（如 OASIS）读取文件时未指定编码的问题
+            # 자식 프로세스 환경 변수 설정, Windows에서 UTF-8 인코딩 사용 보장
+            # 서드파티 라이브러리(예: OASIS)가 파일 읽기 시 인코딩 미지정 문제 해결
             env = os.environ.copy()
-            env['PYTHONUTF8'] = '1'  # Python 3.7+ 支持，让所有 open() 默认使用 UTF-8
-            env['PYTHONIOENCODING'] = 'utf-8'  # 确保 stdout/stderr 使用 UTF-8
+            env['PYTHONUTF8'] = '1'  # Python 3.7+ 지원, 모든 open()이 기본적으로 UTF-8 사용
+            env['PYTHONIOENCODING'] = 'utf-8'  # stdout/stderr가 UTF-8 사용 보장
             
-            # 设置工作目录为模拟目录（数据库等文件会生成在此）
-            # 使用 start_new_session=True 创建新的进程组，确保可以通过 os.killpg 终止所有子进程
+            # 작업 디렉토리를 시뮬레이션 디렉토리로 설정 (데이터베이스 등 파일이 여기에 생성됨)
+            # start_new_session=True로 새 프로세스 그룹 생성, os.killpg를 통해 모든 자식 프로세스 종료 보장
             process = subprocess.Popen(
                 cmd,
                 cwd=sim_dir,
                 stdout=main_log_file,
-                stderr=subprocess.STDOUT,  # stderr 也写入同一个文件
+                stderr=subprocess.STDOUT,  # stderr도 같은 파일에 기록
                 text=True,
-                encoding='utf-8',  # 显式指定编码
+                encoding='utf-8',  # 명시적 인코딩 지정
                 bufsize=1,
-                env=env,  # 传递带有 UTF-8 设置的环境变量
-                start_new_session=True,  # 创建新进程组，确保服务器关闭时能终止所有相关进程
+                env=env,  # UTF-8 설정이 포함된 환경 변수 전달
+                start_new_session=True,  # 새 프로세스 그룹 생성, 서버 종료 시 모든 관련 프로세스 종료 보장
             )
             
-            # 保存文件句柄以便后续关闭
+            # 이후 닫기 위해 파일 핸들 저장
             cls._stdout_files[simulation_id] = main_log_file
-            cls._stderr_files[simulation_id] = None  # 不再需要单独的 stderr
+            cls._stderr_files[simulation_id] = None  # 별도의 stderr 더 이상 불필요
             
             state.process_pid = process.pid
             state.runner_status = RunnerStatus.RUNNING
             cls._processes[simulation_id] = process
             cls._save_run_state(state)
             
-            # 启动监控线程
+            # 모니터링 스레드 시작
             monitor_thread = threading.Thread(
                 target=cls._monitor_simulation,
                 args=(simulation_id,),
@@ -467,7 +467,7 @@ class SimulationRunner:
             monitor_thread.start()
             cls._monitor_threads[simulation_id] = monitor_thread
             
-            logger.info(f"模拟启动成功: {simulation_id}, pid={process.pid}, platform={platform}")
+            logger.info(f"시뮬레이션 시작 성공: {simulation_id}, pid={process.pid}, platform={platform}")
             
         except Exception as e:
             state.runner_status = RunnerStatus.FAILED
@@ -479,10 +479,10 @@ class SimulationRunner:
     
     @classmethod
     def _monitor_simulation(cls, simulation_id: str):
-        """监控模拟进程，解析动作日志"""
+        """시뮬레이션 프로세스 모니터링, 동작 로그 파싱"""
         sim_dir = os.path.join(cls.RUN_STATE_DIR, simulation_id)
         
-        # 新的日志结构：分平台的动作日志
+        # 새로운 로그 구조: 플랫폼별 동작 로그
         twitter_actions_log = os.path.join(sim_dir, "twitter", "actions.jsonl")
         reddit_actions_log = os.path.join(sim_dir, "reddit", "actions.jsonl")
         
@@ -497,74 +497,74 @@ class SimulationRunner:
         
         try:
             while process.poll() is None:  # 进程仍在运行
-                # 读取 Twitter 动作日志
+                # Twitter 동작 로그 읽기
                 if os.path.exists(twitter_actions_log):
                     twitter_position = cls._read_action_log(
                         twitter_actions_log, twitter_position, state, "twitter"
                     )
                 
-                # 读取 Reddit 动作日志
+                # Reddit 동작 로그 읽기
                 if os.path.exists(reddit_actions_log):
                     reddit_position = cls._read_action_log(
                         reddit_actions_log, reddit_position, state, "reddit"
                     )
                 
-                # 更新状态
+                # 상태 업데이트
                 cls._save_run_state(state)
                 time.sleep(2)
             
-            # 进程结束后，最后读取一次日志
+            # 프로세스 종료 후, 마지막으로 한 번 더 로그 읽기
             if os.path.exists(twitter_actions_log):
                 cls._read_action_log(twitter_actions_log, twitter_position, state, "twitter")
             if os.path.exists(reddit_actions_log):
                 cls._read_action_log(reddit_actions_log, reddit_position, state, "reddit")
             
-            # 进程结束
+            # 프로세스 종료
             exit_code = process.returncode
             
             if exit_code == 0:
                 state.runner_status = RunnerStatus.COMPLETED
                 state.completed_at = datetime.now().isoformat()
-                logger.info(f"模拟完成: {simulation_id}")
+                logger.info(f"시뮬레이션 완료: {simulation_id}")
             else:
                 state.runner_status = RunnerStatus.FAILED
-                # 从主日志文件读取错误信息
+                # 메인 로그 파일에서 오류 정보 읽기
                 main_log_path = os.path.join(sim_dir, "simulation.log")
                 error_info = ""
                 try:
                     if os.path.exists(main_log_path):
                         with open(main_log_path, 'r', encoding='utf-8') as f:
-                            error_info = f.read()[-2000:]  # 取最后2000字符
+                            error_info = f.read()[-2000:]  # 마지막 2000자 추출
                 except Exception:
                     pass
-                state.error = f"进程退出码: {exit_code}, 错误: {error_info}"
-                logger.error(f"模拟失败: {simulation_id}, error={state.error}")
+                state.error = f"프로세스 종료 코드: {exit_code}, 오류: {error_info}"
+                logger.error(f"시뮬레이션 실패: {simulation_id}, error={state.error}")
             
             state.twitter_running = False
             state.reddit_running = False
             cls._save_run_state(state)
             
         except Exception as e:
-            logger.error(f"监控线程异常: {simulation_id}, error={str(e)}")
+            logger.error(f"모니터링 스레드 예외: {simulation_id}, error={str(e)}")
             state.runner_status = RunnerStatus.FAILED
             state.error = str(e)
             cls._save_run_state(state)
         
         finally:
-            # 停止图谱记忆更新器
+            # 그래프 메모리 업데이터 중지
             if cls._graph_memory_enabled.get(simulation_id, False):
                 try:
                     GraphMemoryManager.stop_updater(simulation_id)
-                    logger.info(f"已停止图谱记忆更新: simulation_id={simulation_id}")
+                    logger.info(f"그래프 메모리 업데이트 중지됨: simulation_id={simulation_id}")
                 except Exception as e:
-                    logger.error(f"停止图谱记忆更新器失败: {e}")
+                    logger.error(f"그래프 메모리 업데이터 중지 실패: {e}")
                 cls._graph_memory_enabled.pop(simulation_id, None)
             
-            # 清理进程资源
+            # 프로세스 리소스 정리
             cls._processes.pop(simulation_id, None)
             cls._action_queues.pop(simulation_id, None)
             
-            # 关闭日志文件句柄
+            # 로그 파일 핸들 닫기
             if simulation_id in cls._stdout_files:
                 try:
                     cls._stdout_files[simulation_id].close()
@@ -773,13 +773,13 @@ class SimulationRunner:
     
     @classmethod
     def stop_simulation(cls, simulation_id: str) -> SimulationRunState:
-        """停止模拟"""
+        """시뮬레이션 중지"""
         state = cls.get_run_state(simulation_id)
         if not state:
-            raise ValueError(f"模拟不存在: {simulation_id}")
+            raise ValueError(f"시뮬레이션이 존재하지 않음: {simulation_id}")
         
         if state.runner_status not in [RunnerStatus.RUNNING, RunnerStatus.PAUSED]:
-            raise ValueError(f"模拟未在运行: {simulation_id}, status={state.runner_status}")
+            raise ValueError(f"시뮬레이션이 실행 중이 아님: {simulation_id}, status={state.runner_status}")
         
         state.runner_status = RunnerStatus.STOPPING
         cls._save_run_state(state)
@@ -1453,12 +1453,12 @@ class SimulationRunner:
         """
         sim_dir = os.path.join(cls.RUN_STATE_DIR, simulation_id)
         if not os.path.exists(sim_dir):
-            raise ValueError(f"模拟不存在: {simulation_id}")
+            raise ValueError(f"시뮬레이션이 존재하지 않음: {simulation_id}")
 
         ipc_client = SimulationIPCClient(sim_dir)
 
         if not ipc_client.check_env_alive():
-            raise ValueError(f"模拟环境未运行或已关闭，无法执行Interview: {simulation_id}")
+            raise ValueError(f"시뮬레이션 환경이 실행 중이 아니거나 종료됨, Interview 실행 불가: {simulation_id}")
 
         logger.info(f"发送Interview命令: simulation_id={simulation_id}, agent_id={agent_id}, platform={platform}")
 
@@ -1515,12 +1515,12 @@ class SimulationRunner:
         """
         sim_dir = os.path.join(cls.RUN_STATE_DIR, simulation_id)
         if not os.path.exists(sim_dir):
-            raise ValueError(f"模拟不存在: {simulation_id}")
+            raise ValueError(f"시뮬레이션이 존재하지 않음: {simulation_id}")
 
         ipc_client = SimulationIPCClient(sim_dir)
 
         if not ipc_client.check_env_alive():
-            raise ValueError(f"模拟环境未运行或已关闭，无法执行Interview: {simulation_id}")
+            raise ValueError(f"시뮬레이션 환경이 실행 중이 아니거나 종료됨, Interview 실행 불가: {simulation_id}")
 
         logger.info(f"发送批量Interview命令: simulation_id={simulation_id}, count={len(interviews)}, platform={platform}")
 
@@ -1572,19 +1572,19 @@ class SimulationRunner:
         """
         sim_dir = os.path.join(cls.RUN_STATE_DIR, simulation_id)
         if not os.path.exists(sim_dir):
-            raise ValueError(f"模拟不存在: {simulation_id}")
+            raise ValueError(f"시뮬레이션이 존재하지 않음: {simulation_id}")
 
         # 从配置文件获取所有Agent信息
         config_path = os.path.join(sim_dir, "simulation_config.json")
         if not os.path.exists(config_path):
-            raise ValueError(f"模拟配置不存在: {simulation_id}")
+            raise ValueError(f"시뮬레이션 설정이 존재하지 않음: {simulation_id}")
 
         with open(config_path, 'r', encoding='utf-8') as f:
             config = json.load(f)
 
         agent_configs = config.get("agent_configs", [])
         if not agent_configs:
-            raise ValueError(f"模拟配置中没有Agent: {simulation_id}")
+            raise ValueError(f"시뮬레이션 설정에 Agent가 없음: {simulation_id}")
 
         # 构建批量采访列表
         interviews = []
@@ -1612,45 +1612,45 @@ class SimulationRunner:
         timeout: float = 30.0
     ) -> Dict[str, Any]:
         """
-        关闭模拟环境（而不是停止模拟进程）
-        
-        向模拟发送关闭环境命令，使其优雅退出等待命令模式
-        
+        시뮬레이션 환경 닫기 (시뮬레이션 프로세스 중지가 아님)
+
+        시뮬레이션에 환경 닫기 명령을 전송하여 대기 명령 모드에서 우아하게 종료
+
         Args:
-            simulation_id: 模拟ID
-            timeout: 超时时间（秒）
-            
+            simulation_id: 시뮬레이션 ID
+            timeout: 타임아웃 (초)
+
         Returns:
-            操作结果字典
+            작업 결과 딕셔너리
         """
         sim_dir = os.path.join(cls.RUN_STATE_DIR, simulation_id)
         if not os.path.exists(sim_dir):
-            raise ValueError(f"模拟不存在: {simulation_id}")
-        
+            raise ValueError(f"시뮬레이션이 존재하지 않음: {simulation_id}")
+
         ipc_client = SimulationIPCClient(sim_dir)
-        
+
         if not ipc_client.check_env_alive():
             return {
                 "success": True,
-                "message": "环境已经关闭"
+                "message": "환경이 이미 닫혀 있음"
             }
-        
-        logger.info(f"发送关闭环境命令: simulation_id={simulation_id}")
+
+        logger.info(f"환경 닫기 명령 전송: simulation_id={simulation_id}")
         
         try:
             response = ipc_client.send_close_env(timeout=timeout)
             
             return {
                 "success": response.status.value == "completed",
-                "message": "环境关闭命令已发送",
+                "message": "환경 닫기 명령 전송 완료",
                 "result": response.result,
                 "timestamp": response.timestamp
             }
         except TimeoutError:
-            # 超时可能是因为环境正在关闭
+            # 타임아웃은 환경이 닫히는 중일 수 있음
             return {
                 "success": True,
-                "message": "环境关闭命令已发送（等待响应超时，环境可能正在关闭）"
+                "message": "환경 닫기 명령 전송 완료 (응답 대기 타임아웃, 환경이 닫히는 중일 수 있음)"
             }
     
     @classmethod
@@ -1661,7 +1661,7 @@ class SimulationRunner:
         agent_id: Optional[int] = None,
         limit: int = 100
     ) -> List[Dict[str, Any]]:
-        """从单个数据库获取Interview历史"""
+        """단일 데이터베이스에서 Interview 기록 조회"""
         import sqlite3
         
         if not os.path.exists(db_path):
@@ -1707,7 +1707,7 @@ class SimulationRunner:
             conn.close()
             
         except Exception as e:
-            logger.error(f"读取Interview历史失败 ({platform_name}): {e}")
+            logger.error(f"Interview 기록 읽기 실패 ({platform_name}): {e}")
         
         return results
 
@@ -1720,29 +1720,29 @@ class SimulationRunner:
         limit: int = 100
     ) -> List[Dict[str, Any]]:
         """
-        获取Interview历史记录（从数据库读取）
-        
+        Interview 기록 조회 (데이터베이스에서 읽기)
+
         Args:
-            simulation_id: 模拟ID
-            platform: 平台类型（reddit/twitter/None）
-                - "reddit": 只获取Reddit平台的历史
-                - "twitter": 只获取Twitter平台的历史
-                - None: 获取两个平台的所有历史
-            agent_id: 指定Agent ID（可选，只获取该Agent的历史）
-            limit: 每个平台返回数量限制
-            
+            simulation_id: 시뮬레이션 ID
+            platform: 플랫폼 유형 (reddit/twitter/None)
+                - "reddit": Reddit 플랫폼 기록만 조회
+                - "twitter": Twitter 플랫폼 기록만 조회
+                - None: 양쪽 플랫폼의 모든 기록 조회
+            agent_id: 지정 Agent ID (선택, 해당 Agent의 기록만 조회)
+            limit: 각 플랫폼 반환 수량 제한
+
         Returns:
-            Interview历史记录列表
+            Interview 기록 목록
         """
         sim_dir = os.path.join(cls.RUN_STATE_DIR, simulation_id)
         
         results = []
         
-        # 确定要查询的平台
+        # 조회할 플랫폼 결정
         if platform in ("reddit", "twitter"):
             platforms = [platform]
         else:
-            # 不指定platform时，查询两个平台
+            # platform 미지정 시, 양쪽 플랫폼 조회
             platforms = ["twitter", "reddit"]
         
         for p in platforms:
@@ -1755,10 +1755,10 @@ class SimulationRunner:
             )
             results.extend(platform_results)
         
-        # 按时间降序排序
+        # 시간 내림차순 정렬
         results.sort(key=lambda x: x.get("timestamp", ""), reverse=True)
         
-        # 如果查询了多个平台，限制总数
+        # 여러 플랫폼을 조회한 경우, 총 수 제한
         if len(platforms) > 1 and len(results) > limit:
             results = results[:limit]
         

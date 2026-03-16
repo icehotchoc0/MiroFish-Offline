@@ -1,24 +1,24 @@
 <template>
   <div class="graph-panel">
     <div class="panel-header">
-      <span class="panel-title">Graph Relationship Visualization</span>
+      <span class="panel-title">그래프 관계 시각화</span>
       <!-- Top Toolbar (Internal Top Right) -->
       <div class="header-tools">
-        <button class="tool-btn" @click="$emit('refresh')" :disabled="loading" title="Refresh graph">
+        <button class="tool-btn" @click="$emit('refresh')" :disabled="loading" title="그래프 새로고침">
           <span class="icon-refresh" :class="{ 'spinning': loading }">↻</span>
-          <span class="btn-text">Refresh</span>
+          <span class="btn-text">새로고침</span>
         </button>
-        <button class="tool-btn" @click="$emit('toggle-maximize')" title="Maximize/Restore">
+        <button class="tool-btn" @click="$emit('toggle-maximize')" title="최대화/복원">
           <span class="icon-maximize">⛶</span>
         </button>
       </div>
     </div>
-    
+
     <div class="graph-container" ref="graphContainer">
       <!-- Graph Visualization -->
       <div v-if="graphData" class="graph-view">
         <svg ref="graphSvg" class="graph-svg"></svg>
-        
+
         <!-- Building/Simulating Hint -->
         <div v-if="currentPhase === 1 || isSimulating" class="graph-building-hint">
           <div class="memory-icon-wrapper">
@@ -27,9 +27,9 @@
               <path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-4.44-4.04z" />
             </svg>
           </div>
-          {{ isSimulating ? 'GraphRAG short-term/long-term memory updating in real-time' : 'Updating in real-time...' }}
+          {{ isSimulating ? 'GraphRAG 단기/장기 메모리 실시간 업데이트 중' : '실시간 업데이트 중...' }}
         </div>
-        
+
         <!-- Simulation Finished Hint -->
         <div v-if="showSimulationFinishedHint" class="graph-building-hint finished-hint">
           <div class="hint-icon-wrapper">
@@ -39,29 +39,29 @@
               <line x1="12" y1="8" x2="12.01" y2="8"></line>
             </svg>
           </div>
-          <span class="hint-text">Some content is still being processed. It is recommended to manually refresh the graph later</span>
-          <button class="hint-close-btn" @click="dismissFinishedHint" title="Close hint">
+          <span class="hint-text">일부 콘텐츠가 아직 처리 중입니다. 나중에 그래프를 수동으로 새로고침하는 것을 권장합니다</span>
+          <button class="hint-close-btn" @click="dismissFinishedHint" title="닫기">
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
               <line x1="18" y1="6" x2="6" y2="18"></line>
               <line x1="6" y1="6" x2="18" y2="18"></line>
             </svg>
           </button>
         </div>
-        
+
         <!-- Node/Edge Details Panel -->
         <div v-if="selectedItem" class="detail-panel">
           <div class="detail-panel-header">
-            <span class="detail-title">{{ selectedItem.type === 'node' ? 'Node Details' : 'Relationship' }}</span>
+            <span class="detail-title">{{ selectedItem.type === 'node' ? '노드 상세정보' : '관계' }}</span>
             <span v-if="selectedItem.type === 'node'" class="detail-type-badge" :style="{ background: selectedItem.color, color: '#fff' }">
               {{ selectedItem.entityType }}
             </span>
             <button class="detail-close" @click="closeDetailPanel">×</button>
           </div>
-          
+
           <!-- Node Details -->
           <div v-if="selectedItem.type === 'node'" class="detail-content">
             <div class="detail-row">
-              <span class="detail-label">Name:</span>
+              <span class="detail-label">이름:</span>
               <span class="detail-value">{{ selectedItem.data.name }}</span>
             </div>
             <div class="detail-row">
@@ -69,30 +69,30 @@
               <span class="detail-value uuid-text">{{ selectedItem.data.uuid }}</span>
             </div>
             <div class="detail-row" v-if="selectedItem.data.created_at">
-              <span class="detail-label">Created:</span>
+              <span class="detail-label">생성일:</span>
               <span class="detail-value">{{ formatDateTime(selectedItem.data.created_at) }}</span>
             </div>
-            
+
             <!-- Properties -->
             <div class="detail-section" v-if="selectedItem.data.attributes && Object.keys(selectedItem.data.attributes).length > 0">
-              <div class="section-title">Properties:</div>
+              <div class="section-title">속성:</div>
               <div class="properties-list">
                 <div v-for="(value, key) in selectedItem.data.attributes" :key="key" class="property-item">
                   <span class="property-key">{{ key }}:</span>
-                  <span class="property-value">{{ value || 'None' }}</span>
+                  <span class="property-value">{{ value || '없음' }}</span>
                 </div>
               </div>
             </div>
-            
+
             <!-- Summary -->
             <div class="detail-section" v-if="selectedItem.data.summary">
-              <div class="section-title">Summary:</div>
+              <div class="section-title">요약:</div>
               <div class="summary-text">{{ selectedItem.data.summary }}</div>
             </div>
-            
+
             <!-- Labels -->
             <div class="detail-section" v-if="selectedItem.data.labels && selectedItem.data.labels.length > 0">
-              <div class="section-title">Labels:</div>
+              <div class="section-title">라벨:</div>
               <div class="labels-list">
                 <span v-for="label in selectedItem.data.labels" :key="label" class="label-tag">
                   {{ label }}
@@ -100,24 +100,24 @@
               </div>
             </div>
           </div>
-          
+
           <!-- Edge Details -->
           <div v-else class="detail-content">
             <!-- Self-Loop Group Details -->
             <template v-if="selectedItem.data.isSelfLoopGroup">
               <div class="edge-relation-header self-loop-header">
-                {{ selectedItem.data.source_name }} - Self Relations
-                <span class="self-loop-count">{{ selectedItem.data.selfLoopCount }} items</span>
+                {{ selectedItem.data.source_name }} - 자기 관계
+                <span class="self-loop-count">{{ selectedItem.data.selfLoopCount }}개</span>
               </div>
-              
+
               <div class="self-loop-list">
-                <div 
-                  v-for="(loop, idx) in selectedItem.data.selfLoopEdges" 
-                  :key="loop.uuid || idx" 
+                <div
+                  v-for="(loop, idx) in selectedItem.data.selfLoopEdges"
+                  :key="loop.uuid || idx"
                   class="self-loop-item"
                   :class="{ expanded: expandedSelfLoops.has(loop.uuid || idx) }"
                 >
-                  <div 
+                  <div
                     class="self-loop-item-header"
                     @click="toggleSelfLoop(loop.uuid || idx)"
                   >
@@ -125,26 +125,26 @@
                     <span class="self-loop-name">{{ loop.name || loop.fact_type || 'RELATED' }}</span>
                     <span class="self-loop-toggle">{{ expandedSelfLoops.has(loop.uuid || idx) ? '−' : '+' }}</span>
                   </div>
-                  
+
                   <div class="self-loop-item-content" v-show="expandedSelfLoops.has(loop.uuid || idx)">
                     <div class="detail-row" v-if="loop.uuid">
                       <span class="detail-label">UUID:</span>
                       <span class="detail-value uuid-text">{{ loop.uuid }}</span>
                     </div>
                     <div class="detail-row" v-if="loop.fact">
-                      <span class="detail-label">Fact:</span>
+                      <span class="detail-label">사실:</span>
                       <span class="detail-value fact-text">{{ loop.fact }}</span>
                     </div>
                     <div class="detail-row" v-if="loop.fact_type">
-                      <span class="detail-label">Type:</span>
+                      <span class="detail-label">유형:</span>
                       <span class="detail-value">{{ loop.fact_type }}</span>
                     </div>
                     <div class="detail-row" v-if="loop.created_at">
-                      <span class="detail-label">Created:</span>
+                      <span class="detail-label">생성일:</span>
                       <span class="detail-value">{{ formatDateTime(loop.created_at) }}</span>
                     </div>
                     <div v-if="loop.episodes && loop.episodes.length > 0" class="self-loop-episodes">
-                      <span class="detail-label">Episodes:</span>
+                      <span class="detail-label">에피소드:</span>
                       <div class="episodes-list compact">
                         <span v-for="ep in loop.episodes" :key="ep" class="episode-tag small">{{ ep }}</span>
                       </div>
@@ -153,69 +153,69 @@
                 </div>
               </div>
             </template>
-            
+
             <!-- Regular Edge Details -->
             <template v-else>
               <div class="edge-relation-header">
                 {{ selectedItem.data.source_name }} → {{ selectedItem.data.name || 'RELATED_TO' }} → {{ selectedItem.data.target_name }}
               </div>
-              
+
               <div class="detail-row">
                 <span class="detail-label">UUID:</span>
                 <span class="detail-value uuid-text">{{ selectedItem.data.uuid }}</span>
               </div>
               <div class="detail-row">
-                <span class="detail-label">Label:</span>
+                <span class="detail-label">라벨:</span>
                 <span class="detail-value">{{ selectedItem.data.name || 'RELATED_TO' }}</span>
               </div>
               <div class="detail-row">
-                <span class="detail-label">Type:</span>
-                <span class="detail-value">{{ selectedItem.data.fact_type || 'Unknown' }}</span>
+                <span class="detail-label">유형:</span>
+                <span class="detail-value">{{ selectedItem.data.fact_type || '알 수 없음' }}</span>
               </div>
               <div class="detail-row" v-if="selectedItem.data.fact">
-                <span class="detail-label">Fact:</span>
+                <span class="detail-label">사실:</span>
                 <span class="detail-value fact-text">{{ selectedItem.data.fact }}</span>
               </div>
-              
+
               <!-- Episodes -->
               <div class="detail-section" v-if="selectedItem.data.episodes && selectedItem.data.episodes.length > 0">
-                <div class="section-title">Episodes:</div>
+                <div class="section-title">에피소드:</div>
                 <div class="episodes-list">
                   <span v-for="ep in selectedItem.data.episodes" :key="ep" class="episode-tag">
                     {{ ep }}
                   </span>
                 </div>
               </div>
-              
+
               <div class="detail-row" v-if="selectedItem.data.created_at">
-                <span class="detail-label">Created:</span>
+                <span class="detail-label">생성일:</span>
                 <span class="detail-value">{{ formatDateTime(selectedItem.data.created_at) }}</span>
               </div>
               <div class="detail-row" v-if="selectedItem.data.valid_at">
-                <span class="detail-label">Valid From:</span>
+                <span class="detail-label">유효 시작일:</span>
                 <span class="detail-value">{{ formatDateTime(selectedItem.data.valid_at) }}</span>
               </div>
             </template>
           </div>
         </div>
       </div>
-      
+
       <!-- Loading State -->
       <div v-else-if="loading" class="graph-state">
         <div class="loading-spinner"></div>
-        <p>Loading graph data...</p>
+        <p>그래프 데이터 불러오는 중...</p>
       </div>
 
       <!-- Waiting/Empty State -->
       <div v-else class="graph-state">
         <div class="empty-icon">❖</div>
-        <p class="empty-text">Waiting for ontology generation...</p>
+        <p class="empty-text">온톨로지 생성 대기 중...</p>
       </div>
     </div>
 
     <!-- Bottom Legend (Bottom Left) -->
     <div v-if="graphData && entityTypes.length" class="graph-legend">
-      <span class="legend-title">Entity Types</span>
+      <span class="legend-title">엔티티 유형</span>
       <div class="legend-items">
         <div class="legend-item" v-for="type in entityTypes" :key="type.name">
           <span class="legend-dot" :style="{ background: type.color }"></span>
@@ -223,14 +223,14 @@
         </div>
       </div>
     </div>
-    
+
     <!-- Show Edge Labels Toggle -->
     <div v-if="graphData" class="edge-labels-toggle">
       <label class="toggle-switch">
         <input type="checkbox" v-model="showEdgeLabels" />
         <span class="slider"></span>
       </label>
-      <span class="toggle-label">Show Edge Labels</span>
+      <span class="toggle-label">엣지 라벨 표시</span>
     </div>
   </div>
 </template>
@@ -287,7 +287,7 @@ const entityTypes = computed(() => {
   const typeMap = {}
   // Beautiful color palette
   const colors = ['#FF6B35', '#004E89', '#7B2D8E', '#1A936F', '#C5283D', '#E9724C', '#3498db', '#9b59b6', '#27ae60', '#f39c12']
-  
+
   props.graphData.nodes.forEach(node => {
     const type = node.labels?.find(l => l !== 'Entity') || 'Entity'
     if (!typeMap[type]) {
@@ -303,13 +303,13 @@ const formatDateTime = (dateStr) => {
   if (!dateStr) return ''
   try {
     const date = new Date(dateStr)
-    return date.toLocaleString('en-US', { 
-      month: 'short', 
-      day: 'numeric', 
+    return date.toLocaleString('ko-KR', {
+      month: 'short',
+      day: 'numeric',
       year: 'numeric',
       hour: 'numeric',
       minute: '2-digit',
-      hour12: true 
+      hour12: true
     })
   } catch {
     return dateStr
@@ -332,21 +332,21 @@ const renderGraph = () => {
   if (currentSimulation) {
     currentSimulation.stop()
   }
-  
+
   const container = graphContainer.value
   const width = container.clientWidth
   const height = container.clientHeight
-  
+
   const svg = d3.select(graphSvg.value)
     .attr('width', width)
     .attr('height', height)
     .attr('viewBox', `0 0 ${width} ${height}`)
-    
+
   svg.selectAll('*').remove()
-  
+
   const nodesData = props.graphData.nodes || []
   const edgesData = props.graphData.edges || []
-  
+
   if (nodesData.length === 0) return
 
   // Prepare data
@@ -355,7 +355,7 @@ const renderGraph = () => {
 
   const nodes = nodesData.map(n => ({
     id: n.uuid,
-    name: n.name || 'Unnamed',
+    name: n.name || '이름 없음',
     type: n.labels?.find(l => l !== 'Entity') || 'Entity',
     rawData: n
   }))
@@ -389,9 +389,9 @@ const renderGraph = () => {
   // Record which edge index we're at for each pair of nodes
   const edgePairIndex = {}
   const processedSelfLoopNodes = new Set() // Processed self-loop nodes
-  
+
   const edges = []
-  
+
   tempEdges.forEach(e => {
     const isSelfLoop = e.source_node_uuid === e.target_node_uuid
 
@@ -401,15 +401,15 @@ const renderGraph = () => {
         return // Already processed, skip
       }
       processedSelfLoopNodes.add(e.source_node_uuid)
-      
+
       const allSelfLoops = selfLoopEdges[e.source_node_uuid]
-      const nodeName = nodeMap[e.source_node_uuid]?.name || 'Unknown'
-      
+      const nodeName = nodeMap[e.source_node_uuid]?.name || '알 수 없음'
+
       edges.push({
         source: e.source_node_uuid,
         target: e.target_node_uuid,
         type: 'SELF_LOOP',
-        name: `Self Relations (${allSelfLoops.length})`,
+        name: `자기 관계 (${allSelfLoops.length})`,
         curvature: 0,
         isSelfLoop: true,
         rawData: {
@@ -422,7 +422,7 @@ const renderGraph = () => {
       })
       return
     }
-    
+
     const pairKey = [e.source_node_uuid, e.target_node_uuid].sort().join('_')
     const totalCount = edgePairCount[pairKey]
     const currentIndex = edgePairIndex[pairKey] || 0
@@ -445,7 +445,7 @@ const renderGraph = () => {
         curvature = -curvature
       }
     }
-    
+
     edges.push({
       source: e.source_node_uuid,
       target: e.target_node_uuid,
@@ -462,7 +462,7 @@ const renderGraph = () => {
       }
     })
   })
-    
+
   // Color scale
   const colorMap = {}
   entityTypes.value.forEach(t => colorMap[t.name] = t.color)
@@ -483,11 +483,11 @@ const renderGraph = () => {
     // Add center gravity to cluster independent node groups to center area
     .force('x', d3.forceX(width / 2).strength(0.04))
     .force('y', d3.forceY(height / 2).strength(0.04))
-  
+
   currentSimulation = simulation
 
   const g = svg.append('g')
-  
+
   // Zoom
   svg.call(d3.zoom().extent([[0, 0], [width, height]]).scaleExtent([0.1, 4]).on('zoom', (event) => {
     g.attr('transform', event.transform)
@@ -545,7 +545,7 @@ const renderGraph = () => {
       // Self-loop label position: right side of node
       return { x: sx + 70, y: sy }
     }
-    
+
     if (d.curvature === 0) {
       return { x: (sx + tx) / 2, y: (sy + ty) / 2 }
     }

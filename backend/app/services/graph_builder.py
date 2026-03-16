@@ -1,6 +1,6 @@
 """
-图谱构建服务
-使用 GraphStorage (Neo4j) 替代 Zep Cloud API
+그래프 구축 서비스
+GraphStorage (Neo4j)를 사용하여 Zep Cloud API 대체
 """
 
 import time
@@ -19,7 +19,7 @@ logger = logging.getLogger('mirofish.graph_builder')
 
 @dataclass
 class GraphInfo:
-    """图谱信息"""
+    """그래프 정보"""
     graph_id: str
     node_count: int
     edge_count: int
@@ -36,8 +36,8 @@ class GraphInfo:
 
 class GraphBuilderService:
     """
-    图谱构建服务
-    通过 GraphStorage 接口构建知识图谱
+    그래프 구축 서비스
+    GraphStorage 인터페이스를 통해 지식 그래프 구축
     """
 
     def __init__(self, storage: GraphStorage):
@@ -54,20 +54,20 @@ class GraphBuilderService:
         batch_size: int = 3
     ) -> str:
         """
-        异步构建图谱
+        비동기 그래프 구축
 
         Args:
-            text: 输入文本
-            ontology: 本体定义（来自接口1的输出）
-            graph_name: 图谱名称
-            chunk_size: 文本块大小
-            chunk_overlap: 块重叠大小
-            batch_size: 每批发送的块数量
+            text: 입력 텍스트
+            ontology: 온톨로지 정의 (인터페이스 1의 출력)
+            graph_name: 그래프 이름
+            chunk_size: 텍스트 청크 크기
+            chunk_overlap: 청크 중첩 크기
+            batch_size: 배치당 전송할 청크 수
 
         Returns:
-            任务ID
+            태스크 ID
         """
-        # 创建任务
+        # 태스크 생성
         task_id = self.task_manager.create_task(
             task_type="graph_build",
             metadata={
@@ -77,7 +77,7 @@ class GraphBuilderService:
             }
         )
 
-        # 在后台线程中执行构建
+        # 백그라운드 스레드에서 구축 실행
         thread = threading.Thread(
             target=self._build_graph_worker,
             args=(task_id, text, ontology, graph_name, chunk_size, chunk_overlap, batch_size)
@@ -97,41 +97,41 @@ class GraphBuilderService:
         chunk_overlap: int,
         batch_size: int
     ):
-        """图谱构建工作线程"""
+        """그래프 구축 워커 스레드"""
         try:
             self.task_manager.update_task(
                 task_id,
                 status=TaskStatus.PROCESSING,
                 progress=5,
-                message="开始构建图谱..."
+                message="그래프 구축 시작..."
             )
 
-            # 1. 创建图谱
+            # 1. 그래프 생성
             graph_id = self.create_graph(graph_name)
             self.task_manager.update_task(
                 task_id,
                 progress=10,
-                message=f"图谱已创建: {graph_id}"
+                message=f"그래프 생성 완료: {graph_id}"
             )
 
-            # 2. 设置本体
+            # 2. 온톨로지 설정
             self.set_ontology(graph_id, ontology)
             self.task_manager.update_task(
                 task_id,
                 progress=15,
-                message="本体已设置"
+                message="온톨로지 설정 완료"
             )
 
-            # 3. 文本分块
+            # 3. 텍스트 분할
             chunks = TextProcessor.split_text(text, chunk_size, chunk_overlap)
             total_chunks = len(chunks)
             self.task_manager.update_task(
                 task_id,
                 progress=20,
-                message=f"文本已分割为 {total_chunks} 个块"
+                message=f"텍스트를 {total_chunks}개 청크로 분할 완료"
             )
 
-            # 4. 分批发送数据 (NER + embedding + Neo4j insert — synchronous)
+            # 4. 데이터 배치 전송 (NER + embedding + Neo4j insert — synchronous)
             episode_uuids = self.add_text_batches(
                 graph_id, chunks, batch_size,
                 lambda msg, prog: self.task_manager.update_task(
@@ -141,19 +141,19 @@ class GraphBuilderService:
                 )
             )
 
-            # 5. 等待处理 (no-op for Neo4j — already synchronous)
+            # 5. 처리 대기 (no-op for Neo4j — already synchronous)
             self.storage.wait_for_processing(episode_uuids)
 
             self.task_manager.update_task(
                 task_id,
                 progress=85,
-                message="数据处理完成，获取图谱信息..."
+                message="데이터 처리 완료, 그래프 정보 조회 중..."
             )
 
-            # 6. 获取图谱信息
+            # 6. 그래프 정보 조회
             graph_info = self._get_graph_info(graph_id)
 
-            # 完成
+            # 완료
             self.task_manager.complete_task(task_id, {
                 "graph_id": graph_id,
                 "graph_info": graph_info.to_dict(),
@@ -166,7 +166,7 @@ class GraphBuilderService:
             self.task_manager.fail_task(task_id, error_msg)
 
     def create_graph(self, name: str) -> str:
-        """创建图谱"""
+        """그래프 생성"""
         return self.storage.create_graph(
             name=name,
             description="MiroFish Social Simulation Graph"
@@ -174,7 +174,7 @@ class GraphBuilderService:
 
     def set_ontology(self, graph_id: str, ontology: Dict[str, Any]):
         """
-        设置图谱本体
+        그래프 온톨로지 설정
 
         Simply stores ontology as JSON in the Graph node.
         No more dynamic Pydantic class creation (was Zep-specific).
@@ -189,7 +189,7 @@ class GraphBuilderService:
         batch_size: int = 3,
         progress_callback: Optional[Callable] = None
     ) -> List[str]:
-        """分批添加文本到图谱，返回所有 episode 的 uuid 列表"""
+        """그래프에 텍스트를 배치로 추가, 모든 episode의 uuid 목록 반환"""
         episode_uuids = []
         total_chunks = len(chunks)
         total_batches = (total_chunks + batch_size - 1) // batch_size
@@ -203,7 +203,7 @@ class GraphBuilderService:
             if progress_callback:
                 progress = (i + len(batch_chunks)) / total_chunks
                 progress_callback(
-                    f"处理第 {batch_num}/{total_batches} 批数据 ({len(batch_chunks)} 块)...",
+                    f"배치 {batch_num}/{total_batches} 처리 중 ({len(batch_chunks)}개 청크)...",
                     progress
                 )
 
@@ -229,14 +229,14 @@ class GraphBuilderService:
                         f"after {elapsed:.1f}s: {e}"
                     )
                     if progress_callback:
-                        progress_callback(f"批次 {batch_num} 处理失败: {str(e)}", 0)
+                        progress_callback(f"배치 {batch_num} 처리 실패: {str(e)}", 0)
                     raise
 
         logger.info(f"[graph_build] All {total_chunks} chunks processed successfully")
         return episode_uuids
 
     def _get_graph_info(self, graph_id: str) -> GraphInfo:
-        """获取图谱信息"""
+        """그래프 정보 조회"""
         info = self.storage.get_graph_info(graph_id)
         return GraphInfo(
             graph_id=info["graph_id"],
@@ -246,9 +246,9 @@ class GraphBuilderService:
         )
 
     def get_graph_data(self, graph_id: str) -> Dict[str, Any]:
-        """获取完整图谱数据（包含详细信息）"""
+        """완전한 그래프 데이터 조회 (상세 정보 포함)"""
         return self.storage.get_graph_data(graph_id)
 
     def delete_graph(self, graph_id: str):
-        """删除图谱"""
+        """그래프 삭제"""
         self.storage.delete_graph(graph_id)

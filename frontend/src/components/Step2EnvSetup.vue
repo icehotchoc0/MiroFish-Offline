@@ -6,36 +6,36 @@
         <div class="card-header">
           <div class="step-info">
             <span class="step-num">01</span>
-            <span class="step-title">Simulation Instance Initialization</span>
+            <span class="step-title">시뮬레이션 인스턴스 초기화</span>
           </div>
           <div class="step-status">
-            <span v-if="phase > 0" class="badge success">Completed</span>
-            <span v-else class="badge processing">Initialization</span>
+            <span v-if="phase > 0" class="badge success">완료</span>
+            <span v-else class="badge processing">초기화 중</span>
           </div>
         </div>
-        
+
         <div class="card-content">
           <p class="api-note">POST /api/simulation/create</p>
           <p class="description">
-            Create new simulation instance and fetch simulated world parameter template
+            새 시뮬레이션 인스턴스를 생성하고 시뮬레이션 세계 매개변수 템플릿을 가져옵니다
           </p>
 
           <div v-if="simulationId" class="info-card">
             <div class="info-row">
-              <span class="info-label">Project ID</span>
+              <span class="info-label">프로젝트 ID</span>
               <span class="info-value mono">{{ projectData?.project_id }}</span>
             </div>
             <div class="info-row">
-              <span class="info-label">Graph ID</span>
+              <span class="info-label">그래프 ID</span>
               <span class="info-value mono">{{ projectData?.graph_id }}</span>
             </div>
             <div class="info-row">
-              <span class="info-label">Simulation ID</span>
+              <span class="info-label">시뮬레이션 ID</span>
               <span class="info-value mono">{{ simulationId }}</span>
             </div>
             <div class="info-row">
-              <span class="info-label">Task ID</span>
-              <span class="info-value mono">{{ taskId || 'Async task completed' }}</span>
+              <span class="info-label">작업 ID</span>
+              <span class="info-value mono">{{ taskId || '비동기 작업 완료' }}</span>
             </div>
           </div>
         </div>
@@ -46,61 +46,61 @@
         <div class="card-header">
           <div class="step-info">
             <span class="step-num">02</span>
-            <span class="step-title">Generate Agent Personas</span>
+            <span class="step-title">에이전트 페르소나 생성</span>
           </div>
           <div class="step-status">
-            <span v-if="phase > 1" class="badge success">Completed</span>
+            <span v-if="phase > 1" class="badge success">완료</span>
             <span v-else-if="phase === 1" class="badge processing">{{ prepareProgress }}%</span>
-            <span v-else class="badge pending">Waiting</span>
+            <span v-else class="badge pending">대기 중</span>
           </div>
         </div>
 
         <div class="card-content">
           <p class="api-note">POST /api/simulation/prepare</p>
           <p class="description">
-            Combined with context，Automatically invoke tools to organize entities and relationships from knowledge graph，Initialize simulation individuals，and give them unique behaviors and memories based on reality seed
+            컨텍스트와 결합하여 자동으로 도구를 호출해 지식 그래프에서 엔티티와 관계를 정리하고, 시뮬레이션 개체를 초기화하며, 현실 시드를 기반으로 고유한 행동과 기억을 부여합니다
           </p>
 
           <!-- Profiles Stats -->
           <div v-if="profiles.length > 0" class="stats-grid">
             <div class="stat-card">
               <span class="stat-value">{{ profiles.length }}</span>
-              <span class="stat-label">Current Agent Count</span>
+              <span class="stat-label">현재 에이전트 수</span>
             </div>
             <div class="stat-card">
               <span class="stat-value">{{ expectedTotal || '-' }}</span>
-              <span class="stat-label">Expected Agent Total</span>
+              <span class="stat-label">예상 에이전트 총 수</span>
             </div>
             <div class="stat-card">
               <span class="stat-value">{{ totalTopicsCount }}</span>
-              <span class="stat-label">Current Related Topics Count for Reality Seed</span>
+              <span class="stat-label">현실 시드 관련 주제 수</span>
             </div>
           </div>
 
           <!-- Profiles List Preview -->
           <div v-if="profiles.length > 0" class="profiles-preview">
             <div class="preview-header">
-              <span class="preview-title">Generated Agent Personas</span>
+              <span class="preview-title">생성된 에이전트 페르소나</span>
             </div>
             <div class="profiles-list">
-              <div 
-                v-for="(profile, idx) in profiles" 
-                :key="idx" 
+              <div
+                v-for="(profile, idx) in profiles"
+                :key="idx"
                 class="profile-card"
                 @click="selectProfile(profile)"
               >
                 <div class="profile-header">
-                  <span class="profile-realname">{{ profile.username || 'Unknown' }}</span>
+                  <span class="profile-realname">{{ profile.username || '알 수 없음' }}</span>
                   <span class="profile-username">@{{ profile.name || `agent_${idx}` }}</span>
                 </div>
                 <div class="profile-meta">
-                  <span class="profile-profession">{{ profile.profession || 'Unknown Profession' }}</span>
+                  <span class="profile-profession">{{ profile.profession || '직업 미상' }}</span>
                 </div>
-                <p class="profile-bio">{{ profile.bio || 'No introduction available' }}</p>
+                <p class="profile-bio">{{ profile.bio || '소개 없음' }}</p>
                 <div v-if="profile.interested_topics?.length" class="profile-topics">
-                  <span 
-                    v-for="topic in profile.interested_topics.slice(0, 3)" 
-                    :key="topic" 
+                  <span
+                    v-for="topic in profile.interested_topics.slice(0, 3)"
+                    :key="topic"
                     class="topic-tag"
                   >{{ topic }}</span>
                   <span v-if="profile.interested_topics.length > 3" class="topic-more">
@@ -118,63 +118,63 @@
         <div class="card-header">
           <div class="step-info">
             <span class="step-num">03</span>
-            <span class="step-title">Generate Dual Platform Simulation Configuration</span>
+            <span class="step-title">듀얼 플랫폼 시뮬레이션 설정 생성</span>
           </div>
           <div class="step-status">
-            <span v-if="phase > 2" class="badge success">Completed</span>
-            <span v-else-if="phase === 2" class="badge processing">Generating</span>
-            <span v-else class="badge pending">Waiting</span>
+            <span v-if="phase > 2" class="badge success">완료</span>
+            <span v-else-if="phase === 2" class="badge processing">생성 중</span>
+            <span v-else class="badge pending">대기 중</span>
           </div>
         </div>
 
         <div class="card-content">
           <p class="api-note">POST /api/simulation/prepare</p>
           <p class="description">
-            LLM Based on simulation requirements and reality seed，Intelligently set world time flow rate、Recommendation algorithm、Active time period for each individual、Speech frequency、Event trigger and other parameters
+            LLM이 시뮬레이션 요구사항과 현실 시드를 기반으로 세계 시간 흐름 속도, 추천 알고리즘, 각 개체의 활동 시간대, 발언 빈도, 이벤트 트리거 등의 매개변수를 지능적으로 설정합니다
           </p>
-          
+
           <!-- Config Preview -->
           <div v-if="simulationConfig" class="config-detail-panel">
             <!-- Time Configuration -->
             <div class="config-block">
               <div class="config-grid">
                 <div class="config-item">
-                  <span class="config-item-label">Simulation Duration</span>
-                  <span class="config-item-value">{{ simulationConfig.time_config?.total_simulation_hours || '-' }} hours</span>
+                  <span class="config-item-label">시뮬레이션 기간</span>
+                  <span class="config-item-value">{{ simulationConfig.time_config?.total_simulation_hours || '-' }} 시간</span>
                 </div>
                 <div class="config-item">
-                  <span class="config-item-label">Duration per round</span>
-                  <span class="config-item-value">{{ simulationConfig.time_config?.minutes_per_round || '-' }} minutes</span>
+                  <span class="config-item-label">라운드당 시간</span>
+                  <span class="config-item-value">{{ simulationConfig.time_config?.minutes_per_round || '-' }} 분</span>
                 </div>
                 <div class="config-item">
-                  <span class="config-item-label">Total rounds</span>
-                  <span class="config-item-value">{{ Math.floor((simulationConfig.time_config?.total_simulation_hours * 60 / simulationConfig.time_config?.minutes_per_round)) || '-' }} rounds</span>
+                  <span class="config-item-label">총 라운드</span>
+                  <span class="config-item-value">{{ Math.floor((simulationConfig.time_config?.total_simulation_hours * 60 / simulationConfig.time_config?.minutes_per_round)) || '-' }} 라운드</span>
                 </div>
                 <div class="config-item">
-                  <span class="config-item-label">Active per hour</span>
+                  <span class="config-item-label">시간당 활성 수</span>
                   <span class="config-item-value">{{ simulationConfig.time_config?.agents_per_hour_min }}-{{ simulationConfig.time_config?.agents_per_hour_max }}</span>
                 </div>
               </div>
               <div class="time-periods">
                 <div class="period-item">
-                  <span class="period-label">Peak period</span>
+                  <span class="period-label">피크 시간대</span>
                   <span class="period-hours">{{ simulationConfig.time_config?.peak_hours?.join(':00, ') }}:00</span>
-                  <span class="period-multiplier">×{{ simulationConfig.time_config?.peak_activity_multiplier }}</span>
+                  <span class="period-multiplier">x{{ simulationConfig.time_config?.peak_activity_multiplier }}</span>
                 </div>
                 <div class="period-item">
-                  <span class="period-label">Working hours</span>
+                  <span class="period-label">근무 시간</span>
                   <span class="period-hours">{{ simulationConfig.time_config?.work_hours?.[0] }}:00-{{ simulationConfig.time_config?.work_hours?.slice(-1)[0] }}:00</span>
-                  <span class="period-multiplier">×{{ simulationConfig.time_config?.work_activity_multiplier }}</span>
+                  <span class="period-multiplier">x{{ simulationConfig.time_config?.work_activity_multiplier }}</span>
                 </div>
                 <div class="period-item">
-                  <span class="period-label">Morning time period</span>
+                  <span class="period-label">오전 시간대</span>
                   <span class="period-hours">{{ simulationConfig.time_config?.morning_hours?.[0] }}:00-{{ simulationConfig.time_config?.morning_hours?.slice(-1)[0] }}:00</span>
-                  <span class="period-multiplier">×{{ simulationConfig.time_config?.morning_activity_multiplier }}</span>
+                  <span class="period-multiplier">x{{ simulationConfig.time_config?.morning_activity_multiplier }}</span>
                 </div>
                 <div class="period-item">
-                  <span class="period-label">Valley period</span>
+                  <span class="period-label">비피크 시간대</span>
                   <span class="period-hours">{{ simulationConfig.time_config?.off_peak_hours?.[0] }}:00-{{ simulationConfig.time_config?.off_peak_hours?.slice(-1)[0] }}:00</span>
-                  <span class="period-multiplier">×{{ simulationConfig.time_config?.off_peak_activity_multiplier }}</span>
+                  <span class="period-multiplier">x{{ simulationConfig.time_config?.off_peak_activity_multiplier }}</span>
                 </div>
               </div>
             </div>
@@ -182,19 +182,19 @@
             <!-- Agent Configuration -->
             <div class="config-block">
               <div class="config-block-header">
-                <span class="config-block-title">Agent Configuration</span>
-                <span class="config-block-badge">{{ simulationConfig.agent_configs?.length || 0 }} Number</span>
+                <span class="config-block-title">에이전트 설정</span>
+                <span class="config-block-badge">{{ simulationConfig.agent_configs?.length || 0 }} 명</span>
               </div>
               <div class="agents-cards">
-                <div 
-                  v-for="agent in simulationConfig.agent_configs" 
-                  :key="agent.agent_id" 
+                <div
+                  v-for="agent in simulationConfig.agent_configs"
+                  :key="agent.agent_id"
                   class="agent-card"
                 >
                   <!-- Card header -->
                   <div class="agent-card-header">
                     <div class="agent-identity">
-                      <span class="agent-id">Agent {{ agent.agent_id }}</span>
+                      <span class="agent-id">에이전트 {{ agent.agent_id }}</span>
                       <span class="agent-name">{{ agent.entity_name }}</span>
                     </div>
                     <div class="agent-tags">
@@ -202,14 +202,14 @@
                       <span class="agent-stance" :class="'stance-' + agent.stance">{{ agent.stance }}</span>
                     </div>
                   </div>
-                  
+
                   <!-- Active timeline -->
                   <div class="agent-timeline">
-                    <span class="timeline-label">Active period</span>
+                    <span class="timeline-label">활동 시간대</span>
                     <div class="mini-timeline">
-                      <div 
-                        v-for="hour in 24" 
-                        :key="hour - 1" 
+                      <div
+                        v-for="hour in 24"
+                        :key="hour - 1"
                         class="timeline-hour"
                         :class="{ 'active': agent.active_hours?.includes(hour - 1) }"
                         :title="`${hour - 1}:00`"
@@ -228,34 +228,34 @@
                   <div class="agent-params">
                     <div class="param-group">
                       <div class="param-item">
-                        <span class="param-label">Post/time</span>
+                        <span class="param-label">게시/시간</span>
                         <span class="param-value">{{ agent.posts_per_hour }}</span>
                       </div>
                       <div class="param-item">
-                        <span class="param-label">Comment/time</span>
+                        <span class="param-label">댓글/시간</span>
                         <span class="param-value">{{ agent.comments_per_hour }}</span>
                       </div>
                       <div class="param-item">
-                        <span class="param-label">Response delay</span>
-                        <span class="param-value">{{ agent.response_delay_min }}-{{ agent.response_delay_max }}min</span>
+                        <span class="param-label">응답 지연</span>
+                        <span class="param-value">{{ agent.response_delay_min }}-{{ agent.response_delay_max }}분</span>
                       </div>
                     </div>
                     <div class="param-group">
                       <div class="param-item">
-                        <span class="param-label">Activity level</span>
+                        <span class="param-label">활동 수준</span>
                         <span class="param-value with-bar">
                           <span class="mini-bar" :style="{ width: (agent.activity_level * 100) + '%' }"></span>
                           {{ (agent.activity_level * 100).toFixed(0) }}%
                         </span>
                       </div>
                       <div class="param-item">
-                        <span class="param-label">Sentiment tendency</span>
+                        <span class="param-label">감정 성향</span>
                         <span class="param-value" :class="agent.sentiment_bias > 0 ? 'positive' : agent.sentiment_bias < 0 ? 'negative' : 'neutral'">
                           {{ agent.sentiment_bias > 0 ? '+' : '' }}{{ agent.sentiment_bias?.toFixed(1) }}
                         </span>
                       </div>
                       <div class="param-item">
-                        <span class="param-label">Influence</span>
+                        <span class="param-label">영향력</span>
                         <span class="param-value highlight">{{ agent.influence_weight?.toFixed(1) }}</span>
                       </div>
                     </div>
@@ -267,59 +267,59 @@
             <!-- Platform configuration -->
             <div class="config-block">
               <div class="config-block-header">
-                <span class="config-block-title">Recommendation algorithm configuration</span>
+                <span class="config-block-title">추천 알고리즘 설정</span>
               </div>
               <div class="platforms-grid">
                 <div v-if="simulationConfig.twitter_config" class="platform-card">
                   <div class="platform-card-header">
-                    <span class="platform-name">Platform 1：Square / Information flow</span>
+                    <span class="platform-name">플랫폼 1: 광장 / 정보 피드</span>
                   </div>
                   <div class="platform-params">
                     <div class="param-row">
-                      <span class="param-label">Time weight</span>
+                      <span class="param-label">시간 가중치</span>
                       <span class="param-value">{{ simulationConfig.twitter_config.recency_weight }}</span>
                     </div>
                     <div class="param-row">
-                      <span class="param-label">Popularity weight</span>
+                      <span class="param-label">인기도 가중치</span>
                       <span class="param-value">{{ simulationConfig.twitter_config.popularity_weight }}</span>
                     </div>
                     <div class="param-row">
-                      <span class="param-label">Relevance weight</span>
+                      <span class="param-label">관련성 가중치</span>
                       <span class="param-value">{{ simulationConfig.twitter_config.relevance_weight }}</span>
                     </div>
                     <div class="param-row">
-                      <span class="param-label">Virus threshold</span>
+                      <span class="param-label">바이럴 임계값</span>
                       <span class="param-value">{{ simulationConfig.twitter_config.viral_threshold }}</span>
                     </div>
                     <div class="param-row">
-                      <span class="param-label">Echo chamber strength</span>
+                      <span class="param-label">에코 챔버 강도</span>
                       <span class="param-value">{{ simulationConfig.twitter_config.echo_chamber_strength }}</span>
                     </div>
                   </div>
                 </div>
                 <div v-if="simulationConfig.reddit_config" class="platform-card">
                   <div class="platform-card-header">
-                    <span class="platform-name">Platform 2：Topic / Community</span>
+                    <span class="platform-name">플랫폼 2: 주제 / 커뮤니티</span>
                   </div>
                   <div class="platform-params">
                     <div class="param-row">
-                      <span class="param-label">Time weight</span>
+                      <span class="param-label">시간 가중치</span>
                       <span class="param-value">{{ simulationConfig.reddit_config.recency_weight }}</span>
                     </div>
                     <div class="param-row">
-                      <span class="param-label">Popularity weight</span>
+                      <span class="param-label">인기도 가중치</span>
                       <span class="param-value">{{ simulationConfig.reddit_config.popularity_weight }}</span>
                     </div>
                     <div class="param-row">
-                      <span class="param-label">Relevance weight</span>
+                      <span class="param-label">관련성 가중치</span>
                       <span class="param-value">{{ simulationConfig.reddit_config.relevance_weight }}</span>
                     </div>
                     <div class="param-row">
-                      <span class="param-label">Virus threshold</span>
+                      <span class="param-label">바이럴 임계값</span>
                       <span class="param-value">{{ simulationConfig.reddit_config.viral_threshold }}</span>
                     </div>
                     <div class="param-row">
-                      <span class="param-label">Echo chamber strength</span>
+                      <span class="param-label">에코 챔버 강도</span>
                       <span class="param-value">{{ simulationConfig.reddit_config.echo_chamber_strength }}</span>
                     </div>
                   </div>
@@ -330,12 +330,12 @@
             <!-- LLM Configuration inference -->
             <div v-if="simulationConfig.generation_reasoning" class="config-block">
               <div class="config-block-header">
-                <span class="config-block-title">LLM Configuration inference</span>
+                <span class="config-block-title">LLM 설정 추론</span>
               </div>
               <div class="reasoning-content">
-                <div 
-                  v-for="(reason, idx) in simulationConfig.generation_reasoning.split('|').slice(0, 2)" 
-                  :key="idx" 
+                <div
+                  v-for="(reason, idx) in simulationConfig.generation_reasoning.split('|').slice(0, 2)"
+                  :key="idx"
                   class="reasoning-item"
                 >
                   <p class="reasoning-text">{{ reason.trim() }}</p>
@@ -351,19 +351,19 @@
         <div class="card-header">
           <div class="step-info">
             <span class="step-num">04</span>
-            <span class="step-title">Initial activation arrangement</span>
+            <span class="step-title">초기 활성화 배치</span>
           </div>
           <div class="step-status">
-            <span v-if="phase > 3" class="badge success">Completed</span>
-            <span v-else-if="phase === 3" class="badge processing">Arranging</span>
-            <span v-else class="badge pending">Waiting</span>
+            <span v-if="phase > 3" class="badge success">완료</span>
+            <span v-else-if="phase === 3" class="badge processing">배치 중</span>
+            <span v-else class="badge pending">대기 중</span>
           </div>
         </div>
 
         <div class="card-content">
           <p class="api-note">POST /api/simulation/prepare</p>
           <p class="description">
-            Based on narrative direction，Automatically generate initial activation events and trending topics，Guide the initial state of the simulated world
+            내러티브 방향을 기반으로 초기 활성화 이벤트와 트렌딩 주제를 자동 생성하여 시뮬레이션 세계의 초기 상태를 안내합니다
           </p>
 
           <div v-if="simulationConfig?.event_config" class="orchestration-content">
@@ -380,14 +380,14 @@
                     </linearGradient>
                   </defs>
                 </svg>
-                Narrative Guidance Direction
+                내러티브 가이드 방향
               </span>
               <p class="narrative-text">{{ simulationConfig.event_config.narrative_direction }}</p>
             </div>
 
             <!-- Trending Topics -->
             <div class="topics-section">
-              <span class="box-label">Initial trending topics</span>
+              <span class="box-label">초기 트렌딩 주제</span>
               <div class="hot-topics-grid">
                 <span v-for="topic in simulationConfig.event_config.hot_topics" :key="topic" class="hot-topic-tag">
                   # {{ topic }}
@@ -397,7 +397,7 @@
 
             <!-- Initial post stream -->
             <div class="initial-posts-section">
-              <span class="box-label">Initial activation sequence ({{ simulationConfig.event_config.initial_posts.length }})</span>
+              <span class="box-label">초기 활성화 시퀀스 ({{ simulationConfig.event_config.initial_posts.length }})</span>
               <div class="posts-timeline">
                 <div v-for="(post, idx) in simulationConfig.event_config.initial_posts" :key="idx" class="timeline-item">
                   <div class="timeline-marker"></div>
@@ -405,7 +405,7 @@
                     <div class="post-header">
                       <span class="post-role">{{ post.poster_type }}</span>
                       <span class="post-agent-info">
-                        <span class="post-id">Agent {{ post.poster_agent_id }}</span>
+                        <span class="post-id">에이전트 {{ post.poster_agent_id }}</span>
                         <span class="post-username">@{{ getAgentUsername(post.poster_agent_id) }}</span>
                       </span>
                     </div>
@@ -423,49 +423,49 @@
         <div class="card-header">
           <div class="step-info">
             <span class="step-num">05</span>
-            <span class="step-title">Preparation completed</span>
+            <span class="step-title">준비 완료</span>
           </div>
           <div class="step-status">
-            <span v-if="phase >= 4" class="badge processing">In progress</span>
-            <span v-else class="badge pending">Waiting</span>
+            <span v-if="phase >= 4" class="badge processing">진행 중</span>
+            <span v-else class="badge pending">대기 중</span>
           </div>
         </div>
 
         <div class="card-content">
           <p class="api-note">POST /api/simulation/start</p>
-          <p class="description">Simulation environment preparation completed，Can start running simulation</p>
-          
-          <!-- Simulation Rounds Configuration - Only show after configuration generation is completed and rounds are calculated -->
+          <p class="description">시뮬레이션 환경 준비가 완료되었습니다. 시뮬레이션을 시작할 수 있습니다</p>
+
+          <!-- Simulation Rounds Configuration -->
           <div v-if="simulationConfig && autoGeneratedRounds" class="rounds-config-section">
             <div class="rounds-header">
               <div class="header-left">
-                <span class="section-title">Simulation Rounds Setting</span>
-                <span class="section-desc">MiroFish Automatically plan and infer reality <span class="desc-highlight">{{ simulationConfig?.time_config?.total_simulation_hours || '-' }}</span> hours，Each round represents reality <span class="desc-highlight">{{ simulationConfig?.time_config?.minutes_per_round || '-' }}</span> minutes time elapsed</span>
+                <span class="section-title">시뮬레이션 라운드 설정</span>
+                <span class="section-desc">MiroFish가 자동으로 현실 <span class="desc-highlight">{{ simulationConfig?.time_config?.total_simulation_hours || '-' }}</span> 시간을 계획 및 추론하며, 각 라운드는 현실 <span class="desc-highlight">{{ simulationConfig?.time_config?.minutes_per_round || '-' }}</span> 분의 시간 경과를 나타냅니다</span>
               </div>
               <label class="switch-control">
                 <input type="checkbox" v-model="useCustomRounds">
                 <span class="switch-track"></span>
-                <span class="switch-label">Custom</span>
+                <span class="switch-label">사용자 지정</span>
               </label>
             </div>
-            
+
             <Transition name="fade" mode="out-in">
               <div v-if="useCustomRounds" class="rounds-content custom" key="custom">
                 <div class="slider-display">
                   <div class="slider-main-value">
                     <span class="val-num">{{ customMaxRounds }}</span>
-                    <span class="val-unit">rounds</span>
+                    <span class="val-unit">라운드</span>
                   </div>
                   <div class="slider-meta-info">
-                    <span>IfAgentScale is100：Estimated time approximately {{ Math.round(customMaxRounds * 0.6) }} minutes</span>
+                    <span>에이전트 규모 100 기준: 예상 소요 시간 약 {{ Math.round(customMaxRounds * 0.6) }} 분</span>
                   </div>
                 </div>
 
                 <div class="range-wrapper">
-                  <input 
-                    type="range" 
-                    v-model.number="customMaxRounds" 
-                    min="10" 
+                  <input
+                    type="range"
+                    v-model.number="customMaxRounds"
+                    min="10"
                     :max="autoGeneratedRounds"
                     step="5"
                     class="minimal-slider"
@@ -473,22 +473,22 @@
                   />
                   <div class="range-marks">
                     <span>10</span>
-                    <span 
-                      class="mark-recommend" 
+                    <span
+                      class="mark-recommend"
                       :class="{ active: customMaxRounds === 40 }"
                       @click="customMaxRounds = 40"
                       :style="{ position: 'absolute', left: `calc(${(40 - 10) / (autoGeneratedRounds - 10) * 100}% - 30px)` }"
-                    >40 (Recommendation)</span>
+                    >40 (권장)</span>
                     <span>{{ autoGeneratedRounds }}</span>
                   </div>
                 </div>
               </div>
-              
+
               <div v-else class="rounds-content auto" key="auto">
                 <div class="auto-info-card">
                   <div class="auto-value">
                     <span class="val-num">{{ autoGeneratedRounds }}</span>
-                    <span class="val-unit">rounds</span>
+                    <span class="val-unit">라운드</span>
                   </div>
                   <div class="auto-content">
                     <div class="auto-meta-row">
@@ -497,11 +497,11 @@
                           <circle cx="12" cy="12" r="10"></circle>
                           <polyline points="12 6 12 12 16 14"></polyline>
                         </svg>
-                        IfAgentScale is100：Estimated time {{ Math.round(autoGeneratedRounds * 0.6) }} minutes
+                        에이전트 규모 100 기준: 예상 소요 시간 {{ Math.round(autoGeneratedRounds * 0.6) }} 분
                       </span>
                     </div>
                     <div class="auto-desc">
-                      <p class="highlight-tip" @click="useCustomRounds = true">If first run，Strongly recommend switching to‘Custom mode’Reduce simulation rounds，to quickly preview effects and reduce error risk ➝</p>
+                      <p class="highlight-tip" @click="useCustomRounds = true">처음 실행하는 경우, '사용자 지정 모드'로 전환하여 시뮬레이션 라운드를 줄이면 빠르게 효과를 미리보고 오류 위험을 줄일 수 있습니다 ➝</p>
                     </div>
                   </div>
                 </div>
@@ -510,18 +510,18 @@
           </div>
 
           <div class="action-group dual">
-            <button 
+            <button
               class="action-btn secondary"
               @click="$emit('go-back')"
             >
-              ← Return graph construction
+              ← 그래프 구축으로 돌아가기
             </button>
-            <button 
+            <button
               class="action-btn primary"
               :disabled="phase < 4"
               @click="handleStartSimulation"
             >
-              Start dual world parallel simulation ➝
+              듀얼 월드 병렬 시뮬레이션 시작 ➝
             </button>
           </div>
         </div>
@@ -540,43 +540,43 @@
             </div>
             <span class="modal-profession">{{ selectedProfile.profession }}</span>
           </div>
-          <button class="close-btn" @click="selectedProfile = null">×</button>
+          <button class="close-btn" @click="selectedProfile = null">x</button>
         </div>
-        
+
         <div class="modal-body">
           <!-- Basic information -->
           <div class="modal-info-grid">
             <div class="info-item">
-              <span class="info-label">Age manifestation</span>
-              <span class="info-value">{{ selectedProfile.age || '-' }} years old</span>
+              <span class="info-label">나이 표현</span>
+              <span class="info-value">{{ selectedProfile.age || '-' }} 세</span>
             </div>
             <div class="info-item">
-              <span class="info-label">Gender manifestation</span>
-              <span class="info-value">{{ { male: 'Male', female: 'Female', other: 'Other' }[selectedProfile.gender] || selectedProfile.gender }}</span>
+              <span class="info-label">성별 표현</span>
+              <span class="info-value">{{ { male: '남성', female: '여성', other: '기타' }[selectedProfile.gender] || selectedProfile.gender }}</span>
             </div>
             <div class="info-item">
-              <span class="info-label">Country/Region</span>
+              <span class="info-label">국가/지역</span>
               <span class="info-value">{{ selectedProfile.country || '-' }}</span>
             </div>
             <div class="info-item">
-              <span class="info-label">Event manifestationMBTI</span>
+              <span class="info-label">이벤트 표현 MBTI</span>
               <span class="info-value mbti">{{ selectedProfile.mbti || '-' }}</span>
             </div>
           </div>
 
           <!-- Introduction -->
           <div class="modal-section">
-            <span class="section-label">Persona Introduction</span>
-            <p class="section-bio">{{ selectedProfile.bio || 'No introduction available' }}</p>
+            <span class="section-label">페르소나 소개</span>
+            <p class="section-bio">{{ selectedProfile.bio || '소개 없음' }}</p>
           </div>
 
           <!-- Followed Topics -->
           <div class="modal-section" v-if="selectedProfile.interested_topics?.length">
-            <span class="section-label">Reality Seed Related Topics</span>
+            <span class="section-label">현실 시드 관련 주제</span>
             <div class="topics-grid">
-              <span 
-                v-for="topic in selectedProfile.interested_topics" 
-                :key="topic" 
+              <span
+                v-for="topic in selectedProfile.interested_topics"
+                :key="topic"
                 class="topic-item"
               >{{ topic }}</span>
             </div>
@@ -584,25 +584,25 @@
 
           <!-- Detailed Persona -->
           <div class="modal-section" v-if="selectedProfile.persona">
-            <span class="section-label">Detailed Persona Background</span>
-            
+            <span class="section-label">상세 페르소나 배경</span>
+
             <!-- Persona Dimension Overview -->
             <div class="persona-dimensions">
               <div class="dimension-card">
-                <span class="dim-title">Event panoramic experience</span>
-                <span class="dim-desc">Complete behavior trajectory in this event</span>
+                <span class="dim-title">이벤트 전체 경험</span>
+                <span class="dim-desc">이 이벤트에서의 완전한 행동 궤적</span>
               </div>
               <div class="dimension-card">
-                <span class="dim-title">Behavior pattern profiling</span>
-                <span class="dim-desc">Experience summary and action style preference</span>
+                <span class="dim-title">행동 패턴 프로파일링</span>
+                <span class="dim-desc">경험 요약 및 행동 스타일 선호도</span>
               </div>
               <div class="dimension-card">
-                <span class="dim-title">Unique memory imprints</span>
-                <span class="dim-desc">Memory formed based on reality seed</span>
+                <span class="dim-title">고유 기억 각인</span>
+                <span class="dim-desc">현실 시드 기반으로 형성된 기억</span>
               </div>
               <div class="dimension-card">
-                <span class="dim-title">Social Relationship Network</span>
-                <span class="dim-desc">Individual Links and Interaction Graph</span>
+                <span class="dim-title">사회적 관계 네트워크</span>
+                <span class="dim-desc">개체 간 연결 및 상호작용 그래프</span>
               </div>
             </div>
 
@@ -618,7 +618,7 @@
     <!-- Bottom Info / Logs -->
     <div class="system-logs">
       <div class="log-header">
-        <span class="log-title">SYSTEM DASHBOARD</span>
+        <span class="log-title">시스템 대시보드</span>
         <span class="log-id">{{ simulationId || 'NO_SIMULATION' }}</span>
       </div>
       <div class="log-content" ref="logContent">
@@ -633,16 +633,16 @@
 
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
-import { 
-  prepareSimulation, 
-  getPrepareStatus, 
+import {
+  prepareSimulation,
+  getPrepareStatus,
   getSimulationProfilesRealtime,
   getSimulationConfig,
-  getSimulationConfigRealtime 
+  getSimulationConfigRealtime
 } from '../api/simulation'
 
 const props = defineProps({
-  simulationId: String,  // Passed from parent component
+  simulationId: String,
   projectData: Object,
   graphData: Object,
   systemLogs: Array
@@ -651,7 +651,7 @@ const props = defineProps({
 const emit = defineEmits(['go-back', 'next-step', 'add-log', 'update-status'])
 
 // State
-const phase = ref(0) // 0: Initialization, 1: Generate Personas, 2: Generate Configuration, 3: Complete
+const phase = ref(0)
 const taskId = ref(null)
 const prepareProgress = ref(0)
 const currentStage = ref('')
@@ -663,52 +663,44 @@ const simulationConfig = ref(null)
 const selectedProfile = ref(null)
 const showProfilesDetail = ref(true)
 
-// Log deduplication：Record key information from last output
 let lastLoggedMessage = ''
 let lastLoggedProfileCount = 0
 let lastLoggedConfigStage = ''
 
-// Simulation Rounds Configuration
-const useCustomRounds = ref(false) // DefaultUse auto-configured rounds
-const customMaxRounds = ref(40)   // Default recommendation40rounds
+const useCustomRounds = ref(false)
+const customMaxRounds = ref(40)
 
-// Watch stage to update phase
 watch(currentStage, (newStage) => {
   if (newStage === 'GenerateAgentPersona' || newStage === 'generating_profiles') {
     phase.value = 1
   } else if (newStage === 'Generate Simulation Configuration' || newStage === 'generating_config') {
     phase.value = 2
-    // Enter configuration generation phase，Start polling configuration
     if (!configTimer) {
-      addLog('Start generating dual platform simulation configuration...')
+      addLog('듀얼 플랫폼 시뮬레이션 설정 생성 시작...')
       startConfigPolling()
     }
   } else if (newStage === 'Prepare simulation script' || newStage === 'copying_scripts') {
-    phase.value = 2 // Still in configuration phase
+    phase.value = 2
   }
 })
 
-// Calculate auto-generated rounds from configuration（Do not use hardcoded default values）
 const autoGeneratedRounds = computed(() => {
   if (!simulationConfig.value?.time_config) {
-    return null // Return when configuration is not generated null
+    return null
   }
   const totalHours = simulationConfig.value.time_config.total_simulation_hours
   const minutesPerRound = simulationConfig.value.time_config.minutes_per_round
   if (!totalHours || !minutesPerRound) {
-    return null // Return when configuration data is incomplete null
+    return null
   }
   const calculatedRounds = Math.floor((totalHours * 60) / minutesPerRound)
-  // Ensure max rounds no less than40（Recommendation value），Avoid slider range anomalies
   return Math.max(calculatedRounds, 40)
 })
 
-// Polling timer
 let pollTimer = null
 let profilesTimer = null
 let configTimer = null
 
-// Computed
 const displayProfiles = computed(() => {
   if (showProfilesDetail.value) {
     return profiles.value
@@ -716,7 +708,6 @@ const displayProfiles = computed(() => {
   return profiles.value.slice(0, 6)
 })
 
-// Based onagent_idGet correspondingusername
 const getAgentUsername = (agentId) => {
   if (profiles.value && profiles.value.length > agentId && agentId >= 0) {
     const profile = profiles.value[agentId]
@@ -725,32 +716,26 @@ const getAgentUsername = (agentId) => {
   return `agent_${agentId}`
 }
 
-// Calculate total related topics for all personas
 const totalTopicsCount = computed(() => {
   return profiles.value.reduce((sum, p) => {
     return sum + (p.interested_topics?.length || 0)
   }, 0)
 })
 
-// Methods
 const addLog = (msg) => {
   emit('add-log', msg)
 }
 
-// ProcessStart simulationButton click
 const handleStartSimulation = () => {
-  // Build parameters to pass to parent component
   const params = {}
-  
+
   if (useCustomRounds.value) {
-    // User custom rounds，Pass max_rounds Parameter
     params.maxRounds = customMaxRounds.value
-    addLog(`Start simulation，Custom rounds: ${customMaxRounds.value} rounds`)
+    addLog(`시뮬레이션 시작, 사용자 지정 라운드: ${customMaxRounds.value} 라운드`)
   } else {
-    // User chose to keep auto-generated rounds，Do not pass max_rounds Parameter
-    addLog(`Start simulation，Use auto-configured rounds: ${autoGeneratedRounds.value} rounds`)
+    addLog(`시뮬레이션 시작, 자동 설정 라운드 사용: ${autoGeneratedRounds.value} 라운드`)
   }
-  
+
   emit('next-step', params)
 }
 
@@ -765,58 +750,53 @@ const selectProfile = (profile) => {
   selectedProfile.value = profile
 }
 
-// Automatically start preparing simulation
 const startPrepareSimulation = async () => {
   if (!props.simulationId) {
-    addLog('Error：Missing simulationId')
+    addLog('오류: simulationId가 없습니다')
     emit('update-status', 'error')
     return
   }
-  
-  // Mark step 1 completed，Start step 2
+
   phase.value = 1
-  addLog(`Simulation instance created: ${props.simulationId}`)
-  addLog('Preparing simulation environment...')
+  addLog(`시뮬레이션 인스턴스 생성됨: ${props.simulationId}`)
+  addLog('시뮬레이션 환경 준비 중...')
   emit('update-status', 'processing')
-  
+
   try {
     const res = await prepareSimulation({
       simulation_id: props.simulationId,
       use_llm_for_profiles: true,
       parallel_profile_count: 5
     })
-    
+
     if (res.success && res.data) {
       if (res.data.already_prepared) {
-        addLog('Detected existing completed preparation work，Use directly')
+        addLog('기존 완료된 준비 작업 감지, 직접 사용')
         await loadPreparedData()
         return
       }
-      
+
       taskId.value = res.data.task_id
-      addLog(`Preparation task started`)
-      addLog(`  └─ Task ID: ${res.data.task_id}`)
-      
-      // Set immediatelyExpected Agent Total（FromprepareInterface return value retrieval）
+      addLog(`준비 작업 시작됨`)
+      addLog(`  └─ 작업 ID: ${res.data.task_id}`)
+
       if (res.data.expected_entities_count) {
         expectedTotal.value = res.data.expected_entities_count
-        addLog(`FromNeo4jGraph read ${res.data.expected_entities_count} entities`)
+        addLog(`Neo4j 그래프에서 ${res.data.expected_entities_count}개 엔티티 읽음`)
         if (res.data.entity_types && res.data.entity_types.length > 0) {
-          addLog(`  └─ Entity Type: ${res.data.entity_types.join(', ')}`)
+          addLog(`  └─ 엔티티 유형: ${res.data.entity_types.join(', ')}`)
         }
       }
-      
-      addLog('Start polling preparation progress...')
-      // Start polling progress
+
+      addLog('준비 진행 상황 폴링 시작...')
       startPolling()
-      // Start real-time fetching Profiles
       startProfilesPolling()
     } else {
-      addLog(`Preparation failed: ${res.error || 'Unknown error'}`)
+      addLog(`준비 실패: ${res.error || '알 수 없는 오류'}`)
       emit('update-status', 'error')
     }
   } catch (err) {
-    addLog(`Preparation exception: ${err.message}`)
+    addLog(`준비 예외: ${err.message}`)
     emit('update-status', 'error')
   }
 }
@@ -845,25 +825,22 @@ const stopProfilesPolling = () => {
 
 const pollPrepareStatus = async () => {
   if (!taskId.value && !props.simulationId) return
-  
+
   try {
     const res = await getPrepareStatus({
       task_id: taskId.value,
       simulation_id: props.simulationId
     })
-    
+
     if (res.success && res.data) {
       const data = res.data
-      
-      // Update progress
+
       prepareProgress.value = data.progress || 0
       progressMessage.value = data.message || ''
-      
-      // Parse phase information and output detailed log
+
       if (data.progress_detail) {
         currentStage.value = data.progress_detail.current_stage_name || ''
-        
-        // Output detailed progress log（Avoid duplication）
+
         const detail = data.progress_detail
         const logKey = `${detail.current_stage}-${detail.current_item}-${detail.total_items}`
         if (logKey !== lastLoggedMessage && detail.item_description) {
@@ -876,57 +853,51 @@ const pollPrepareStatus = async () => {
           }
         }
       } else if (data.message) {
-        // Extract phase from message
         const match = data.message.match(/\[(\d+)\/(\d+)\]\s*([^:]+)/)
         if (match) {
           currentStage.value = match[3].trim()
         }
-        // Output message log（Avoid duplication）
         if (data.message !== lastLoggedMessage) {
           lastLoggedMessage = data.message
           addLog(data.message)
         }
       }
-      
-      // Check if completed
+
       if (data.status === 'completed' || data.status === 'ready' || data.already_prepared) {
-        addLog('✓ Preparation work completed')
+        addLog('준비 작업 완료')
         stopPolling()
         stopProfilesPolling()
         await loadPreparedData()
       } else if (data.status === 'failed') {
-        addLog(`✗ Preparation failed: ${data.error || 'Unknown error'}`)
+        addLog(`준비 실패: ${data.error || '알 수 없는 오류'}`)
         stopPolling()
         stopProfilesPolling()
       }
     }
   } catch (err) {
-    console.warn('Polling status failed:', err)
+    console.warn('폴링 상태 실패:', err)
   }
 }
 
 const fetchProfilesRealtime = async () => {
   if (!props.simulationId) return
-  
+
   try {
     const res = await getSimulationProfilesRealtime(props.simulationId, 'reddit')
-    
+
     if (res.success && res.data) {
       const prevCount = profiles.value.length
       profiles.value = res.data.profiles || []
-      // Only when API Update only when returning valid values，Avoid overwriting existing valid values
       if (res.data.total_expected) {
         expectedTotal.value = res.data.total_expected
       }
-      
-      // Extract entity type
+
       const types = new Set()
       profiles.value.forEach(p => {
         if (p.entity_type) types.add(p.entity_type)
       })
       entityTypes.value = Array.from(types)
-      
-      // Output Profile Generation progress log（Only when quantity changes）
+
       const currentCount = profiles.value.length
       if (currentCount > 0 && currentCount !== lastLoggedProfileCount) {
         lastLoggedProfileCount = currentCount
@@ -934,22 +905,20 @@ const fetchProfilesRealtime = async () => {
         const latestProfile = profiles.value[currentCount - 1]
         const profileName = latestProfile?.name || latestProfile?.username || `Agent_${currentCount}`
         if (currentCount === 1) {
-          addLog(`Start generationAgentPersona...`)
+          addLog(`에이전트 페르소나 생성 시작...`)
         }
-        addLog(`→ AgentPersona ${currentCount}/${total}: ${profileName} (${latestProfile?.profession || 'Unknown Profession'})`)
-        
-        // If all generation is completed
+        addLog(`→ 에이전트 페르소나 ${currentCount}/${total}: ${profileName} (${latestProfile?.profession || '직업 미상'})`)
+
         if (expectedTotal.value && currentCount >= expectedTotal.value) {
-          addLog(`✓ All (All) ${currentCount} NumberAgentPersona generation completed`)
+          addLog(`전체 ${currentCount}명 에이전트 페르소나 생성 완료`)
         }
       }
     }
   } catch (err) {
-    console.warn('Get Profiles Failed:', err)
+    console.warn('프로필 조회 실패:', err)
   }
 }
 
-// ConfigurationroundsInquiry
 const startConfigPolling = () => {
   configTimer = setInterval(fetchConfigRealtime, 2000)
 }
@@ -963,99 +932,89 @@ const stopConfigPolling = () => {
 
 const fetchConfigRealtime = async () => {
   if (!props.simulationId) return
-  
+
   try {
     const res = await getSimulationConfigRealtime(props.simulationId)
-    
+
     if (res.success && res.data) {
       const data = res.data
-      
-      // Output configuration generation phase log（Avoid duplication）
+
       if (data.generation_stage && data.generation_stage !== lastLoggedConfigStage) {
         lastLoggedConfigStage = data.generation_stage
         if (data.generation_stage === 'generating_profiles') {
-          addLog('CurrentlyGenerateAgentPersona Configuration...')
+          addLog('에이전트 페르소나 설정 생성 중...')
         } else if (data.generation_stage === 'generating_config') {
-          addLog('CallingLLMGenerate Simulation ConfigurationParameter...')
+          addLog('LLM을 호출하여 시뮬레이션 설정 매개변수 생성 중...')
         }
       }
-      
-      // If configuration is generated
+
       if (data.config_generated && data.config) {
         simulationConfig.value = data.config
-        addLog('✓ Simulation configuration generation completed')
-        
-        // Show detailed configuration summary
+        addLog('시뮬레이션 설정 생성 완료')
+
         if (data.summary) {
-          addLog(`  ├─ AgentQuantity: ${data.summary.total_agents}Number`)
-          addLog(`  ├─ Simulation Duration: ${data.summary.simulation_hours}hours`)
-          addLog(`  ├─ Initial posts: ${data.summary.initial_posts_count}items`)
-          addLog(`  ├─ Trending Topics: ${data.summary.hot_topics_count}Number`)
-          addLog(`  └─ Platform configuration: Twitter ${data.summary.has_twitter_config ? '✓' : '✗'}, Reddit ${data.summary.has_reddit_config ? '✓' : '✗'}`)
+          addLog(`  ├─ 에이전트 수: ${data.summary.total_agents}명`)
+          addLog(`  ├─ 시뮬레이션 기간: ${data.summary.simulation_hours}시간`)
+          addLog(`  ├─ 초기 게시물: ${data.summary.initial_posts_count}건`)
+          addLog(`  ├─ 트렌딩 주제: ${data.summary.hot_topics_count}개`)
+          addLog(`  └─ 플랫폼 설정: Twitter ${data.summary.has_twitter_config ? '✓' : '✗'}, Reddit ${data.summary.has_reddit_config ? '✓' : '✗'}`)
         }
-        
-        // Show time configuration details
+
         if (data.config.time_config) {
           const tc = data.config.time_config
-          addLog(`Time Configuration: Per round${tc.minutes_per_round}minutes, Total${Math.floor((tc.total_simulation_hours * 60) / tc.minutes_per_round)}rounds`)
+          addLog(`시간 설정: 라운드당 ${tc.minutes_per_round}분, 총 ${Math.floor((tc.total_simulation_hours * 60) / tc.minutes_per_round)}라운드`)
         }
-        
-        // Show event configuration
+
         if (data.config.event_config?.narrative_direction) {
           const narrative = data.config.event_config.narrative_direction
-          addLog(`Narrative Direction: ${narrative.length > 50 ? narrative.substring(0, 50) + '...' : narrative}`)
+          addLog(`내러티브 방향: ${narrative.length > 50 ? narrative.substring(0, 50) + '...' : narrative}`)
         }
-        
+
         stopConfigPolling()
         phase.value = 4
-        addLog('✓ Env Setup Completed，Can start simulation')
+        addLog('환경 설정 완료, 시뮬레이션을 시작할 수 있습니다')
         emit('update-status', 'completed')
       }
     }
   } catch (err) {
-    console.warn('Get Config Failed:', err)
+    console.warn('설정 조회 실패:', err)
   }
 }
 
 const loadPreparedData = async () => {
   phase.value = 2
-  addLog('Loading existing configuration data...')
+  addLog('기존 설정 데이터 로딩 중...')
 
-  // Get one last time Profiles
   await fetchProfilesRealtime()
-  addLog(`Loaded ${profiles.value.length} NumberAgentPersona`)
+  addLog(`${profiles.value.length}명 에이전트 페르소나 로드됨`)
 
-  // Get configuration（Use real-time interface）
   try {
     const res = await getSimulationConfigRealtime(props.simulationId)
     if (res.success && res.data) {
       if (res.data.config_generated && res.data.config) {
         simulationConfig.value = res.data.config
-        addLog('✓ Simulation configuration loaded successfully')
-        
-        // Show detailed configuration summary
+        addLog('시뮬레이션 설정 로드 성공')
+
         if (res.data.summary) {
-          addLog(`  ├─ AgentQuantity: ${res.data.summary.total_agents}Number`)
-          addLog(`  ├─ Simulation Duration: ${res.data.summary.simulation_hours}hours`)
-          addLog(`  └─ Initial posts: ${res.data.summary.initial_posts_count}items`)
+          addLog(`  ├─ 에이전트 수: ${res.data.summary.total_agents}명`)
+          addLog(`  ├─ 시뮬레이션 기간: ${res.data.summary.simulation_hours}시간`)
+          addLog(`  └─ 초기 게시물: ${res.data.summary.initial_posts_count}건`)
         }
-        
-        addLog('✓ Env Setup Completed，Can start simulation')
+
+        addLog('환경 설정 완료, 시뮬레이션을 시작할 수 있습니다')
         phase.value = 4
         emit('update-status', 'completed')
       } else {
-        // Configuration not yet generated，Start polling
-        addLog('Configuration generating，Start polling wait...')
+        addLog('설정 생성 중, 폴링 대기 시작...')
         startConfigPolling()
       }
     }
   } catch (err) {
-    addLog(`Failed to load configuration: ${err.message}`)
+    addLog(`설정 로드 실패: ${err.message}`)
     emit('update-status', 'error')
   }
 }
 
-// Scroll log to bottom
 const logContent = ref(null)
 watch(() => props.systemLogs?.length, () => {
   nextTick(() => {
@@ -1066,9 +1025,8 @@ watch(() => props.systemLogs?.length, () => {
 })
 
 onMounted(() => {
-  // Automatically start preparation process
   if (props.simulationId) {
-    addLog('Step2 Env Setup Initialization')
+    addLog('Step2 환경 설정 초기화')
     startPrepareSimulation()
   }
 })
@@ -1098,7 +1056,6 @@ onUnmounted(() => {
   gap: 20px;
 }
 
-/* Step Card */
 .step-card {
   background: #FFF;
   border-radius: 8px;
@@ -1158,9 +1115,7 @@ onUnmounted(() => {
 .badge.pending { background: #F5F5F5; color: #999; }
 .badge.accent { background: #E3F2FD; color: #1565C0; }
 
-.card-content {
-  /* No extra padding - uses step-card's padding */
-}
+.card-content { }
 
 .api-note {
   font-family: 'JetBrains Mono', monospace;
@@ -1176,10 +1131,7 @@ onUnmounted(() => {
   margin-bottom: 16px;
 }
 
-/* Action Section */
-.action-section {
-  margin-top: 16px;
-}
+.action-section { margin-top: 16px; }
 
 .action-btn {
   display: inline-flex;
@@ -1194,45 +1146,16 @@ onUnmounted(() => {
   transition: all 0.2s ease;
 }
 
-.action-btn.primary {
-  background: #000;
-  color: #FFF;
-}
+.action-btn.primary { background: #000; color: #FFF; }
+.action-btn.primary:hover:not(:disabled) { opacity: 0.8; }
+.action-btn.secondary { background: #F5F5F5; color: #333; }
+.action-btn.secondary:hover:not(:disabled) { background: #E5E5E5; }
+.action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-.action-btn.primary:hover:not(:disabled) {
-  opacity: 0.8;
-}
+.action-group { display: flex; gap: 12px; margin-top: 16px; }
+.action-group.dual { display: grid; grid-template-columns: 1fr 1fr; }
+.action-group.dual .action-btn { width: 100%; }
 
-.action-btn.secondary {
-  background: #F5F5F5;
-  color: #333;
-}
-
-.action-btn.secondary:hover:not(:disabled) {
-  background: #E5E5E5;
-}
-
-.action-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.action-group {
-  display: flex;
-  gap: 12px;
-  margin-top: 16px;
-}
-
-.action-group.dual {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-}
-
-.action-group.dual .action-btn {
-  width: 100%;
-}
-
-/* Info Card */
 .info-card {
   background: #F5F5F5;
   border-radius: 6px;
@@ -1248,26 +1171,12 @@ onUnmounted(() => {
   border-bottom: 1px dashed #E0E0E0;
 }
 
-.info-row:last-child {
-  border-bottom: none;
-}
+.info-row:last-child { border-bottom: none; }
 
-.info-label {
-  font-size: 12px;
-  color: #666;
-}
+.info-label { font-size: 12px; color: #666; }
+.info-value { font-size: 13px; font-weight: 500; }
+.info-value.mono { font-family: 'JetBrains Mono', monospace; font-size: 12px; }
 
-.info-value {
-  font-size: 13px;
-  font-weight: 500;
-}
-
-.info-value.mono {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 12px;
-}
-
-/* Stats Grid */
 .stats-grid {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
@@ -1277,9 +1186,7 @@ onUnmounted(() => {
   border-radius: 6px;
 }
 
-.stat-card {
-  text-align: center;
-}
+.stat-card { text-align: center; }
 
 .stat-value {
   display: block;
@@ -1297,7 +1204,6 @@ onUnmounted(() => {
   display: block;
 }
 
-/* Profiles Preview */
 .profiles-preview {
   margin-top: 20px;
   border-top: 1px solid #E5E5E5;
@@ -1328,18 +1234,9 @@ onUnmounted(() => {
   padding-right: 4px;
 }
 
-.profiles-list::-webkit-scrollbar {
-  width: 4px;
-}
-
-.profiles-list::-webkit-scrollbar-thumb {
-  background: #DDD;
-  border-radius: 2px;
-}
-
-.profiles-list::-webkit-scrollbar-thumb:hover {
-  background: #CCC;
-}
+.profiles-list::-webkit-scrollbar { width: 4px; }
+.profiles-list::-webkit-scrollbar-thumb { background: #DDD; border-radius: 2px; }
+.profiles-list::-webkit-scrollbar-thumb:hover { background: #CCC; }
 
 .profile-card {
   background: #FAFAFA;
@@ -1350,10 +1247,7 @@ onUnmounted(() => {
   transition: all 0.2s ease;
 }
 
-.profile-card:hover {
-  border-color: #999;
-  background: #FFF;
-}
+.profile-card:hover { border-color: #999; background: #FFF; }
 
 .profile-header {
   display: flex;
@@ -1362,11 +1256,7 @@ onUnmounted(() => {
   margin-bottom: 6px;
 }
 
-.profile-realname {
-  font-size: 14px;
-  font-weight: 700;
-  color: #000;
-}
+.profile-realname { font-size: 14px; font-weight: 700; color: #000; }
 
 .profile-username {
   font-family: 'JetBrains Mono', monospace;
@@ -1374,9 +1264,7 @@ onUnmounted(() => {
   color: #999;
 }
 
-.profile-meta {
-  margin-bottom: 8px;
-}
+.profile-meta { margin-bottom: 8px; }
 
 .profile-profession {
   font-size: 11px;
@@ -1397,11 +1285,7 @@ onUnmounted(() => {
   overflow: hidden;
 }
 
-.profile-topics {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
+.profile-topics { display: flex; flex-wrap: wrap; gap: 6px; }
 
 .topic-tag {
   font-size: 10px;
@@ -1411,17 +1295,9 @@ onUnmounted(() => {
   border-radius: 10px;
 }
 
-.topic-more {
-  font-size: 10px;
-  color: #999;
-  padding: 2px 6px;
-}
+.topic-more { font-size: 10px; color: #999; padding: 2px 6px; }
 
-/* Config Preview */
-/* Config Detail Panel */
-.config-detail-panel {
-  margin-top: 16px;
-}
+.config-detail-panel { margin-top: 16px; }
 
 .config-block {
   margin-top: 16px;
@@ -1429,11 +1305,7 @@ onUnmounted(() => {
   padding-top: 12px;
 }
 
-.config-block:first-child {
-  margin-top: 0;
-  border-top: none;
-  padding-top: 0;
-}
+.config-block:first-child { margin-top: 0; border-top: none; padding-top: 0; }
 
 .config-block-header {
   display: flex;
@@ -1459,7 +1331,6 @@ onUnmounted(() => {
   border-radius: 10px;
 }
 
-/* Config Grid */
 .config-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -1475,10 +1346,7 @@ onUnmounted(() => {
   gap: 4px;
 }
 
-.config-item-label {
-  font-size: 11px;
-  color: #94A3B8;
-}
+.config-item-label { font-size: 11px; color: #94A3B8; }
 
 .config-item-value {
   font-family: 'JetBrains Mono', monospace;
@@ -1487,7 +1355,6 @@ onUnmounted(() => {
   color: #1E293B;
 }
 
-/* Time Periods */
 .time-periods {
   margin-top: 12px;
   display: flex;
@@ -1504,12 +1371,7 @@ onUnmounted(() => {
   border-radius: 6px;
 }
 
-.period-label {
-  font-size: 12px;
-  font-weight: 500;
-  color: #64748B;
-  min-width: 70px;
-}
+.period-label { font-size: 12px; font-weight: 500; color: #64748B; min-width: 70px; }
 
 .period-hours {
   font-family: 'JetBrains Mono', monospace;
@@ -1528,7 +1390,6 @@ onUnmounted(() => {
   border-radius: 4px;
 }
 
-/* Agents Cards */
 .agents-cards {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -1538,18 +1399,9 @@ onUnmounted(() => {
   padding-right: 4px;
 }
 
-.agents-cards::-webkit-scrollbar {
-  width: 4px;
-}
-
-.agents-cards::-webkit-scrollbar-thumb {
-  background: #DDD;
-  border-radius: 2px;
-}
-
-.agents-cards::-webkit-scrollbar-thumb:hover {
-  background: #CCC;
-}
+.agents-cards::-webkit-scrollbar { width: 4px; }
+.agents-cards::-webkit-scrollbar-thumb { background: #DDD; border-radius: 2px; }
+.agents-cards::-webkit-scrollbar-thumb:hover { background: #CCC; }
 
 .agent-card {
   background: #F9F9F9;
@@ -1559,12 +1411,8 @@ onUnmounted(() => {
   transition: all 0.2s ease;
 }
 
-.agent-card:hover {
-  border-color: #999;
-  background: #FFF;
-}
+.agent-card:hover { border-color: #999; background: #FFF; }
 
-/* Agent Card Header */
 .agent-card-header {
   display: flex;
   justify-content: space-between;
@@ -1574,11 +1422,7 @@ onUnmounted(() => {
   border-bottom: 1px solid #F1F5F9;
 }
 
-.agent-identity {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
+.agent-identity { display: flex; flex-direction: column; gap: 2px; }
 
 .agent-id {
   font-family: 'JetBrains Mono', monospace;
@@ -1586,16 +1430,8 @@ onUnmounted(() => {
   color: #94A3B8;
 }
 
-.agent-name {
-  font-size: 14px;
-  font-weight: 600;
-  color: #1E293B;
-}
-
-.agent-tags {
-  display: flex;
-  gap: 6px;
-}
+.agent-name { font-size: 14px; font-weight: 600; color: #1E293B; }
+.agent-tags { display: flex; gap: 6px; }
 
 .agent-type {
   font-size: 10px;
@@ -1613,30 +1449,12 @@ onUnmounted(() => {
   border-radius: 4px;
 }
 
-.stance-neutral {
-  background: #F1F5F9;
-  color: #64748B;
-}
+.stance-neutral { background: #F1F5F9; color: #64748B; }
+.stance-supportive { background: #DCFCE7; color: #16A34A; }
+.stance-opposing { background: #FEE2E2; color: #DC2626; }
+.stance-observer { background: #FEF3C7; color: #D97706; }
 
-.stance-supportive {
-  background: #DCFCE7;
-  color: #16A34A;
-}
-
-.stance-opposing {
-  background: #FEE2E2;
-  color: #DC2626;
-}
-
-.stance-observer {
-  background: #FEF3C7;
-  color: #D97706;
-}
-
-/* Agent Timeline */
-.agent-timeline {
-  margin-bottom: 14px;
-}
+.agent-timeline { margin-bottom: 14px; }
 
 .timeline-label {
   display: block;
@@ -1656,16 +1474,8 @@ onUnmounted(() => {
   padding: 3px;
 }
 
-.timeline-hour {
-  flex: 1;
-  background: #E2E8F0;
-  border-radius: 2px;
-  transition: all 0.2s;
-}
-
-.timeline-hour.active {
-  background: linear-gradient(180deg, #6366F1, #818CF8);
-}
+.timeline-hour { flex: 1; background: #E2E8F0; border-radius: 2px; transition: all 0.2s; }
+.timeline-hour.active { background: linear-gradient(180deg, #6366F1, #818CF8); }
 
 .timeline-marks {
   display: flex;
@@ -1676,29 +1486,10 @@ onUnmounted(() => {
   color: #94A3B8;
 }
 
-/* Agent Params */
-.agent-params {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.param-group {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-}
-
-.param-item {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.param-item .param-label {
-  font-size: 10px;
-  color: #94A3B8;
-}
+.agent-params { display: flex; flex-direction: column; gap: 10px; }
+.param-group { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.param-item { display: flex; flex-direction: column; gap: 2px; }
+.param-item .param-label { font-size: 10px; color: #94A3B8; }
 
 .param-item .param-value {
   font-family: 'JetBrains Mono', monospace;
@@ -1707,11 +1498,7 @@ onUnmounted(() => {
   color: #475569;
 }
 
-.param-value.with-bar {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
+.param-value.with-bar { display: flex; align-items: center; gap: 6px; }
 
 .mini-bar {
   height: 4px;
@@ -1721,34 +1508,14 @@ onUnmounted(() => {
   max-width: 40px;
 }
 
-.param-value.positive {
-  color: #16A34A;
-}
+.param-value.positive { color: #16A34A; }
+.param-value.negative { color: #DC2626; }
+.param-value.neutral { color: #64748B; }
+.param-value.highlight { color: #6366F1; }
 
-.param-value.negative {
-  color: #DC2626;
-}
+.platforms-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
 
-.param-value.neutral {
-  color: #64748B;
-}
-
-.param-value.highlight {
-  color: #6366F1;
-}
-
-/* Platforms Grid */
-.platforms-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-}
-
-.platform-card {
-  background: #F9F9F9;
-  padding: 14px;
-  border-radius: 6px;
-}
+.platform-card { background: #F9F9F9; padding: 14px; border-radius: 6px; }
 
 .platform-card-header {
   margin-bottom: 10px;
@@ -1756,28 +1523,11 @@ onUnmounted(() => {
   border-bottom: 1px solid #E5E5E5;
 }
 
-.platform-name {
-  font-size: 13px;
-  font-weight: 600;
-  color: #333;
-}
+.platform-name { font-size: 13px; font-weight: 600; color: #333; }
+.platform-params { display: flex; flex-direction: column; gap: 8px; }
 
-.platform-params {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.param-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.param-label {
-  font-size: 12px;
-  color: #64748B;
-}
+.param-row { display: flex; justify-content: space-between; align-items: center; }
+.param-label { font-size: 12px; color: #64748B; }
 
 .param-value {
   font-family: 'JetBrains Mono', monospace;
@@ -1786,33 +1536,14 @@ onUnmounted(() => {
   color: #1E293B;
 }
 
-/* Reasoning Content */
-.reasoning-content {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
+.reasoning-content { display: flex; flex-direction: column; gap: 10px; }
 
-.reasoning-item {
-  padding: 12px 14px;
-  background: #F9F9F9;
-  border-radius: 6px;
-}
+.reasoning-item { padding: 12px 14px; background: #F9F9F9; border-radius: 6px; }
+.reasoning-text { font-size: 13px; color: #555; line-height: 1.7; margin: 0; }
 
-.reasoning-text {
-  font-size: 13px;
-  color: #555;
-  line-height: 1.7;
-  margin: 0;
-}
-
-/* Profile Modal */
 .profile-modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  top: 0; left: 0; right: 0; bottom: 0;
   background: rgba(0, 0, 0, 0.6);
   display: flex;
   align-items: center;
@@ -1842,9 +1573,7 @@ onUnmounted(() => {
   border-bottom: 1px solid #F0F0F0;
 }
 
-.modal-header-info {
-  flex: 1;
-}
+.modal-header-info { flex: 1; }
 
 .modal-name-row {
   display: flex;
@@ -1853,11 +1582,7 @@ onUnmounted(() => {
   margin-bottom: 8px;
 }
 
-.modal-realname {
-  font-size: 20px;
-  font-weight: 700;
-  color: #000;
-}
+.modal-realname { font-size: 20px; font-weight: 700; color: #000; }
 
 .modal-username {
   font-family: 'JetBrains Mono', monospace;
@@ -1892,17 +1617,10 @@ onUnmounted(() => {
   padding: 0;
 }
 
-.close-btn:hover {
-  color: #333;
-}
+.close-btn:hover { color: #333; }
 
-.modal-body {
-  padding: 24px;
-  overflow-y: auto;
-  flex: 1;
-}
+.modal-body { padding: 24px; overflow-y: auto; flex: 1; }
 
-/* Basic information grid */
 .modal-info-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -1913,11 +1631,7 @@ onUnmounted(() => {
   border-radius: 0;
 }
 
-.info-item {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
+.info-item { display: flex; flex-direction: column; gap: 4px; }
 
 .info-label {
   font-size: 11px;
@@ -1927,21 +1641,10 @@ onUnmounted(() => {
   font-weight: 600;
 }
 
-.info-value {
-  font-size: 15px;
-  font-weight: 600;
-  color: #333;
-}
+.info-value { font-size: 15px; font-weight: 600; color: #333; }
+.info-value.mbti { font-family: 'JetBrains Mono', monospace; color: #FF5722; }
 
-.info-value.mbti {
-  font-family: 'JetBrains Mono', monospace;
-  color: #FF5722;
-}
-
-/* Module area */
-.modal-section {
-  margin-bottom: 28px;
-}
+.modal-section { margin-bottom: 28px; }
 
 .section-label {
   display: block;
@@ -1964,12 +1667,7 @@ onUnmounted(() => {
   border-left: 3px solid #E0E0E0;
 }
 
-/* Topic Tag */
-.topics-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
+.topics-grid { display: flex; flex-wrap: wrap; gap: 8px; }
 
 .topic-item {
   font-size: 11px;
@@ -1981,12 +1679,8 @@ onUnmounted(() => {
   border: none;
 }
 
-.topic-item:hover {
-  background: #BBDEFB;
-  color: #0D47A1;
-}
+.topic-item:hover { background: #BBDEFB; color: #0D47A1; }
 
-/* Detailed Persona */
 .persona-dimensions {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -2002,25 +1696,10 @@ onUnmounted(() => {
   transition: all 0.2s;
 }
 
-.dimension-card:hover {
-  background: #F0F0F0;
-  border-left-color: #999;
-}
+.dimension-card:hover { background: #F0F0F0; border-left-color: #999; }
 
-.dim-title {
-  display: block;
-  font-size: 12px;
-  font-weight: 700;
-  color: #333;
-  margin-bottom: 4px;
-}
-
-.dim-desc {
-  display: block;
-  font-size: 10px;
-  color: #888;
-  line-height: 1.4;
-}
+.dim-title { display: block; font-size: 12px; font-weight: 700; color: #333; margin-bottom: 4px; }
+.dim-desc { display: block; font-size: 10px; color: #888; line-height: 1.4; }
 
 .persona-content {
   max-height: none;
@@ -2031,14 +1710,8 @@ onUnmounted(() => {
   border-radius: 0;
 }
 
-.persona-content::-webkit-scrollbar {
-  width: 4px;
-}
-
-.persona-content::-webkit-scrollbar-thumb {
-  background: #DDD;
-  border-radius: 2px;
-}
+.persona-content::-webkit-scrollbar { width: 4px; }
+.persona-content::-webkit-scrollbar-thumb { background: #DDD; border-radius: 2px; }
 
 .section-persona {
   font-size: 13px;
@@ -2048,7 +1721,6 @@ onUnmounted(() => {
   text-align: justify;
 }
 
-/* System Logs */
 .system-logs {
   background: #000;
   color: #DDD;
@@ -2072,38 +1744,18 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  height: 80px; /* Approx 4 lines visible */
+  height: 80px;
   overflow-y: auto;
   padding-right: 4px;
 }
 
-.log-content::-webkit-scrollbar {
-  width: 4px;
-}
+.log-content::-webkit-scrollbar { width: 4px; }
+.log-content::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
 
-.log-content::-webkit-scrollbar-thumb {
-  background: #333;
-  border-radius: 2px;
-}
+.log-line { font-size: 11px; display: flex; gap: 12px; line-height: 1.5; }
+.log-time { color: #666; min-width: 75px; }
+.log-msg { color: #CCC; word-break: break-all; }
 
-.log-line {
-  font-size: 11px;
-  display: flex;
-  gap: 12px;
-  line-height: 1.5;
-}
-
-.log-time {
-  color: #666;
-  min-width: 75px;
-}
-
-.log-msg {
-  color: #CCC;
-  word-break: break-all;
-}
-
-/* Spinner */
 .spinner-sm {
   width: 16px;
   height: 16px;
@@ -2113,10 +1765,8 @@ onUnmounted(() => {
   animation: spin 0.8s linear infinite;
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-/* Orchestration Content */
+@keyframes spin { to { transform: rotate(360deg); } }
+
 .orchestration-content {
   display: flex;
   flex-direction: column;
@@ -2159,9 +1809,7 @@ onUnmounted(() => {
   transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-.narrative-box:hover .special-icon {
-  transform: rotate(180deg);
-}
+.narrative-box:hover .special-icon { transform: rotate(180deg); }
 
 .narrative-text {
   font-family: 'Inter', 'Noto Sans SC', system-ui, sans-serif;
@@ -2173,15 +1821,8 @@ onUnmounted(() => {
   letter-spacing: 0.01em;
 }
 
-.topics-section {
-  background: #FFF;
-}
-
-.hot-topics-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
+.topics-section { background: #FFF; }
+.hot-topics-grid { display: flex; flex-wrap: wrap; gap: 8px; }
 
 .hot-topic-tag {
   font-size: 12px;
@@ -2192,16 +1833,9 @@ onUnmounted(() => {
   font-weight: 500;
 }
 
-.hot-topic-more {
-  font-size: 11px;
-  color: #999;
-  padding: 4px 6px;
-}
+.hot-topic-more { font-size: 11px; color: #999; padding: 4px 6px; }
 
-.initial-posts-section {
-  border-top: 1px solid #EAEAEA;
-  padding-top: 16px;
-}
+.initial-posts-section { border-top: 1px solid #EAEAEA; padding-top: 16px; }
 
 .posts-timeline {
   display: flex;
@@ -2212,10 +1846,7 @@ onUnmounted(() => {
   margin-top: 12px;
 }
 
-.timeline-item {
-  position: relative;
-  padding-left: 20px;
-}
+.timeline-item { position: relative; padding-left: 20px; }
 
 .timeline-marker {
   position: absolute;
@@ -2233,11 +1864,7 @@ onUnmounted(() => {
   border: 1px solid #EEE;
 }
 
-.post-header {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 6px;
-}
+.post-header { display: flex; justify-content: space-between; margin-bottom: 6px; }
 
 .post-role {
   font-size: 11px;
@@ -2246,11 +1873,7 @@ onUnmounted(() => {
   text-transform: uppercase;
 }
 
-.post-agent-info {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
+.post-agent-info { display: flex; align-items: center; gap: 6px; }
 
 .post-id,
 .post-username {
@@ -2261,18 +1884,9 @@ onUnmounted(() => {
   vertical-align: baseline;
 }
 
-.post-username {
-  margin-right: 6px;
-}
+.post-username { margin-right: 6px; }
+.post-text { font-size: 12px; color: #555; line-height: 1.5; margin: 0; }
 
-.post-text {
-  font-size: 12px;
-  color: #555;
-  line-height: 1.5;
-  margin: 0;
-}
-
-/* Simulation Rounds ConfigurationStyle */
 .rounds-config-section {
   margin: 24px 0;
   padding-top: 24px;
@@ -2286,22 +1900,9 @@ onUnmounted(() => {
   margin-bottom: 20px;
 }
 
-.header-left {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.section-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: #1E293B;
-}
-
-.section-desc {
-  font-size: 12px;
-  color: #94A3B8;
-}
+.header-left { display: flex; flex-direction: column; gap: 4px; }
+.section-title { font-size: 14px; font-weight: 600; color: #1E293B; }
+.section-desc { font-size: 12px; color: #94A3B8; }
 
 .desc-highlight {
   font-family: 'JetBrains Mono', monospace;
@@ -2313,7 +1914,6 @@ onUnmounted(() => {
   margin: 0 2px;
 }
 
-/* Switch Control */
 .switch-control {
   display: flex;
   align-items: center;
@@ -2324,13 +1924,8 @@ onUnmounted(() => {
   transition: background 0.2s;
 }
 
-.switch-control:hover {
-  background: #F8FAFC;
-}
-
-.switch-control input {
-  display: none;
-}
+.switch-control:hover { background: #F8FAFC; }
+.switch-control input { display: none; }
 
 .switch-track {
   width: 36px;
@@ -2354,28 +1949,12 @@ onUnmounted(() => {
   transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
 }
 
-.switch-control input:checked + .switch-track {
-  background: #000;
-}
+.switch-control input:checked + .switch-track { background: #000; }
+.switch-control input:checked + .switch-track::after { transform: translateX(16px); }
+.switch-label { font-size: 12px; font-weight: 500; color: #64748B; }
+.switch-control input:checked ~ .switch-label { color: #1E293B; }
 
-.switch-control input:checked + .switch-track::after {
-  transform: translateX(16px);
-}
-
-.switch-label {
-  font-size: 12px;
-  font-weight: 500;
-  color: #64748B;
-}
-
-.switch-control input:checked ~ .switch-label {
-  color: #1E293B;
-}
-
-/* Slider Content */
-.rounds-content {
-  animation: fadeIn 0.3s ease;
-}
+.rounds-content { animation: fadeIn 0.3s ease; }
 
 .slider-display {
   display: flex;
@@ -2384,11 +1963,7 @@ onUnmounted(() => {
   margin-bottom: 16px;
 }
 
-.slider-main-value {
-  display: flex;
-  align-items: baseline;
-  gap: 4px;
-}
+.slider-main-value { display: flex; align-items: baseline; gap: 4px; }
 
 .val-num {
   font-family: 'JetBrains Mono', monospace;
@@ -2397,11 +1972,7 @@ onUnmounted(() => {
   color: #000;
 }
 
-.val-unit {
-  font-size: 12px;
-  color: #666;
-  font-weight: 500;
-}
+.val-unit { font-size: 12px; color: #666; font-weight: 500; }
 
 .slider-meta-info {
   font-family: 'JetBrains Mono', monospace;
@@ -2412,10 +1983,7 @@ onUnmounted(() => {
   border-radius: 4px;
 }
 
-.range-wrapper {
-  position: relative;
-  padding: 0 2px;
-}
+.range-wrapper { position: relative; padding: 0 2px; }
 
 .minimal-slider {
   -webkit-appearance: none;
@@ -2440,17 +2008,11 @@ onUnmounted(() => {
   cursor: pointer;
   box-shadow: 0 1px 4px rgba(0,0,0,0.1);
   transition: transform 0.1s;
-  margin-top: -6px; /* Center thumb */
+  margin-top: -6px;
 }
 
-.minimal-slider::-webkit-slider-thumb:hover {
-  transform: scale(1.1);
-}
-
-.minimal-slider::-webkit-slider-runnable-track {
-  height: 4px;
-  border-radius: 2px;
-}
+.minimal-slider::-webkit-slider-thumb:hover { transform: scale(1.1); }
+.minimal-slider::-webkit-slider-runnable-track { height: 4px; border-radius: 2px; }
 
 .range-marks {
   display: flex;
@@ -2462,20 +2024,9 @@ onUnmounted(() => {
   position: relative;
 }
 
-.mark-recommend {
-  cursor: pointer;
-  transition: color 0.2s;
-  position: relative;
-}
-
-.mark-recommend:hover {
-  color: #000;
-}
-
-.mark-recommend.active {
-  color: #000;
-  font-weight: 600;
-}
+.mark-recommend { cursor: pointer; transition: color 0.2s; position: relative; }
+.mark-recommend:hover { color: #000; }
+.mark-recommend.active { color: #000; font-weight: 600; }
 
 .mark-recommend::after {
   content: '';
@@ -2488,7 +2039,6 @@ onUnmounted(() => {
   background: #CBD5E1;
 }
 
-/* Auto Info */
 .auto-info-card {
   display: flex;
   align-items: center;
@@ -2515,10 +2065,7 @@ onUnmounted(() => {
   justify-content: center;
 }
 
-.auto-meta-row {
-  display: flex;
-  align-items: center;
-}
+.auto-meta-row { display: flex; align-items: center; }
 
 .duration-badge {
   display: inline-flex;
@@ -2535,18 +2082,8 @@ onUnmounted(() => {
   box-shadow: 0 1px 2px rgba(0,0,0,0.02);
 }
 
-.auto-desc {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.auto-desc p {
-  margin: 0;
-  font-size: 13px;
-  color: #64748B;
-  line-height: 1.5;
-}
+.auto-desc { display: flex; flex-direction: column; gap: 2px; }
+.auto-desc p { margin: 0; font-size: 13px; color: #64748B; line-height: 1.5; }
 
 .highlight-tip {
   margin-top: 4px !important;
@@ -2556,43 +2093,24 @@ onUnmounted(() => {
   cursor: pointer;
 }
 
-.highlight-tip:hover {
-  text-decoration: underline;
-}
+.highlight-tip:hover { text-decoration: underline; }
 
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.2s ease;
-}
+.fade-enter-active, .fade-leave-active { transition: opacity 0.2s ease; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
 
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
-
-/* Modal Transition */
-.modal-enter-active,
-.modal-leave-active {
-  transition: opacity 0.3s ease;
-}
-
-.modal-enter-from,
-.modal-leave-to {
-  opacity: 0;
-}
+.modal-enter-active, .modal-leave-active { transition: opacity 0.3s ease; }
+.modal-enter-from, .modal-leave-to { opacity: 0; }
 
 .modal-enter-active .profile-modal {
   transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-.modal-leave-active .profile-modal {
-  transition: all 0.3s ease-in;
-}
+.modal-leave-active .profile-modal { transition: all 0.3s ease-in; }
 
 .modal-enter-from .profile-modal,
 .modal-leave-to .profile-modal {

@@ -1,7 +1,7 @@
 """
-LLM客户端封装
-统一使用OpenAI格式调用
-支持 Ollama num_ctx 参数防止 prompt 被截断
+LLM 클라이언트 래퍼
+OpenAI 형식 호출 통합 사용
+Ollama num_ctx 파라미터 지원으로 프롬프트 잘림 방지
 """
 
 import json
@@ -14,7 +14,7 @@ from ..config import Config
 
 
 class LLMClient:
-    """LLM客户端"""
+    """LLM 클라이언트"""
 
     def __init__(
         self,
@@ -28,7 +28,7 @@ class LLMClient:
         self.model = model or Config.LLM_MODEL_NAME
 
         if not self.api_key:
-            raise ValueError("LLM_API_KEY 未配置")
+            raise ValueError("LLM_API_KEY 미설정")
 
         self.client = OpenAI(
             api_key=self.api_key,
@@ -52,16 +52,16 @@ class LLMClient:
         response_format: Optional[Dict] = None
     ) -> str:
         """
-        发送聊天请求
+        채팅 요청 전송
 
         Args:
-            messages: 消息列表
-            temperature: 温度参数
-            max_tokens: 最大token数
-            response_format: 响应格式（如JSON模式）
+            messages: 메시지 목록
+            temperature: 온도 파라미터
+            max_tokens: 최대 토큰 수
+            response_format: 응답 형식 (예: JSON 모드)
 
         Returns:
-            模型响应文本
+            모델 응답 텍스트
         """
         kwargs = {
             "model": self.model,
@@ -81,7 +81,7 @@ class LLMClient:
 
         response = self.client.chat.completions.create(**kwargs)
         content = response.choices[0].message.content
-        # 部分模型（如MiniMax M2.5）会在content中包含<think>思考内容，需要移除
+        # 일부 모델(예: MiniMax M2.5)이 content에 <think> 사고 내용을 포함하므로 제거 필요
         content = re.sub(r'<think>[\s\S]*?</think>', '', content).strip()
         return content
 
@@ -92,15 +92,15 @@ class LLMClient:
         max_tokens: int = 4096
     ) -> Dict[str, Any]:
         """
-        发送聊天请求并返回JSON
+        채팅 요청을 전송하고 JSON 반환
 
         Args:
-            messages: 消息列表
-            temperature: 温度参数
-            max_tokens: 最大token数
+            messages: 메시지 목록
+            temperature: 온도 파라미터
+            max_tokens: 최대 토큰 수
 
         Returns:
-            解析后的JSON对象
+            파싱된 JSON 객체
         """
         response = self.chat(
             messages=messages,
@@ -108,7 +108,7 @@ class LLMClient:
             max_tokens=max_tokens,
             response_format={"type": "json_object"}
         )
-        # 清理markdown代码块标记
+        # markdown 코드 블록 마커 제거
         cleaned_response = response.strip()
         cleaned_response = re.sub(r'^```(?:json)?\s*\n?', '', cleaned_response, flags=re.IGNORECASE)
         cleaned_response = re.sub(r'\n?```\s*$', '', cleaned_response)
@@ -117,4 +117,4 @@ class LLMClient:
         try:
             return json.loads(cleaned_response)
         except json.JSONDecodeError:
-            raise ValueError(f"LLM返回的JSON格式无效: {cleaned_response}")
+            raise ValueError(f"LLM이 반환한 JSON 형식이 유효하지 않습니다: {cleaned_response}")

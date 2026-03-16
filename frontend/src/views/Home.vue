@@ -5,7 +5,7 @@
       <div class="nav-brand" :style="s.navBrand">MIROFISH OFFLINE</div>
       <div class="nav-links" :style="s.navLinks">
         <a href="https://github.com/nikmcfly/MiroFish-Offline" target="_blank" class="github-link" :style="s.githubLink">
-          Visit our Github <span>↗</span>
+          GitHub 방문하기 <span>↗</span>
         </a>
       </div>
     </nav>
@@ -15,21 +15,21 @@
       <section class="hero-section" :style="s.heroSection">
         <div class="hero-left" :style="s.heroLeft">
           <div class="tag-row" :style="s.tagRow">
-            <span class="orange-tag" :style="s.orangeTag">Offline Multi-Agent Simulation Engine</span>
+            <span class="orange-tag" :style="s.orangeTag">오프라인 멀티 에이전트 시뮬레이션 엔진</span>
             <span class="version-text" :style="s.versionText">/ v0.1-preview</span>
           </div>
 
           <h1 class="main-title" :style="s.mainTitle">
-            Upload Any Document<br>
-            <span class="gradient-text" :style="s.gradientText">Predict What Happens Next</span>
+            문서를 업로드하면<br>
+            <span class="gradient-text" :style="s.gradientText">다음에 일어날 일을 예측합니다</span>
           </h1>
 
           <div class="hero-desc" :style="s.heroDesc">
             <p :style="s.heroDescP">
-              From a single document, <span :style="s.highlightBold">MiroFish Offline</span> extracts reality seeds and builds a parallel world of <span :style="s.highlightOrange">autonomous AI agents</span> — running entirely on your machine. Inject variables, observe emergent behavior, and find <span :style="s.highlightCode">"local optima"</span> in complex social dynamics.
+              하나의 문서로부터 <span :style="s.highlightBold">MiroFish Offline</span>은 현실 시드를 추출하고 <span :style="s.highlightOrange">자율 AI 에이전트</span>들의 병렬 세계를 구축합니다 — 모든 것이 사용자의 머신에서 실행됩니다. 변수를 주입하고, 창발적 행동을 관찰하며, 복잡한 사회적 역학에서 <span :style="s.highlightCode">"국소 최적점"</span>을 찾으세요.
             </p>
             <p class="slogan-text" :style="s.sloganText">
-              Your data never leaves your machine. The future is simulated locally<span :style="s.blinkingCursor">_</span>
+              데이터는 절대 외부로 전송되지 않습니다. 미래는 로컬에서 시뮬레이션됩니다<span :style="s.blinkingCursor">_</span>
             </p>
           </div>
 
@@ -38,7 +38,7 @@
 
         <div class="hero-right" :style="s.heroRight">
           <div class="logo-container" :style="s.logoContainer">
-            <img src="../assets/logo/MiroFish_logo_left.jpeg" alt="MiroFish Logo" :style="s.heroLogo" />
+            <img src="../assets/logo/MiroFish_logo_left.jpeg" alt="MiroFish 로고" :style="s.heroLogo" />
           </div>
           <button :style="s.scrollDownBtn" @click="scrollToBottom">↓</button>
         </div>
@@ -49,28 +49,28 @@
         <!-- Left Column: Status & Steps -->
         <div class="left-panel" :style="s.leftPanel">
           <div class="panel-header" :style="s.panelHeader">
-            <span :style="s.statusDot">■</span> System Status
+            <span :style="s.statusDot">■</span> 시스템 상태
           </div>
 
-          <h2 class="section-title" :style="s.sectionTitle">Ready</h2>
+          <h2 class="section-title" :style="s.sectionTitle">준비 완료</h2>
           <p class="section-desc" :style="s.sectionDesc">
-            Local prediction engine on standby. Upload unstructured data to initialize a simulation.
+            로컬 예측 엔진이 대기 중입니다. 비정형 데이터를 업로드하여 시뮬레이션을 시작하세요.
           </p>
 
           <div class="metrics-row" :style="s.metricsRow">
             <div class="metric-card" :style="s.metricCard">
-              <div class="metric-value" :style="s.metricValue">Free</div>
-              <div class="metric-label" :style="s.metricLabel">Runs on your hardware</div>
+              <div class="metric-value" :style="s.metricValue">무료</div>
+              <div class="metric-label" :style="s.metricLabel">사용자 하드웨어에서 실행</div>
             </div>
             <div class="metric-card" :style="s.metricCard">
-              <div class="metric-value" :style="s.metricValue">Private</div>
-              <div class="metric-label" :style="s.metricLabel">100% offline, no cloud</div>
+              <div class="metric-value" :style="s.metricValue">비공개</div>
+              <div class="metric-label" :style="s.metricLabel">100% 오프라인, 클라우드 불필요</div>
             </div>
           </div>
 
           <div class="steps-container" :style="s.stepsContainer">
             <div class="steps-header" :style="s.stepsHeader">
-               <span :style="s.diamondIcon">◇</span> Workflow Sequence
+               <span :style="s.diamondIcon">◇</span> 워크플로우 순서
             </div>
             <div :style="s.workflowList">
               <div v-for="(step, i) in steps" :key="i" :style="s.workflowItem">
@@ -89,8 +89,8 @@
           <div class="console-box" :style="s.consoleBox">
             <div :style="s.consoleSection">
               <div class="console-header" :style="s.consoleHeader">
-                <span>01 / Reality Seeds</span>
-                <span>Supported: PDF, MD, TXT</span>
+                <span>01 / 현실 시드</span>
+                <span>지원 형식: PDF, MD, TXT</span>
               </div>
               <div
                 :style="s.uploadZone"
@@ -102,8 +102,8 @@
                 <input ref="fileInput" type="file" multiple accept=".pdf,.md,.txt" @change="handleFileSelect" style="display: none" :disabled="loading" />
                 <div v-if="files.length === 0" :style="s.uploadPlaceholder">
                   <div :style="s.uploadIcon">↑</div>
-                  <div :style="s.uploadTitle">Drag & drop files here</div>
-                  <div :style="s.uploadHint">or click to browse</div>
+                  <div :style="s.uploadTitle">파일을 여기에 드래그 앤 드롭하세요</div>
+                  <div :style="s.uploadHint">또는 클릭하여 파일 선택</div>
                 </div>
                 <div v-else :style="s.fileList">
                   <div v-for="(file, index) in files" :key="index" :style="s.fileItem">
@@ -115,22 +115,22 @@
               </div>
             </div>
 
-            <div :style="s.consoleDivider"><span :style="s.consoleDividerText">Parameters</span></div>
+            <div :style="s.consoleDivider"><span :style="s.consoleDividerText">매개변수</span></div>
 
             <div :style="s.consoleSection">
               <div class="console-header" :style="s.consoleHeader">
-                <span>>_ 02 / Simulation Prompt</span>
+                <span>>_ 02 / 시뮬레이션 프롬프트</span>
               </div>
               <div :style="s.inputWrapper">
-                <textarea v-model="formData.simulationRequirement" :style="s.codeInput" placeholder="// Describe your simulation or prediction goal in natural language" rows="6" :disabled="loading"></textarea>
-                <div :style="s.modelBadge">Engine: Ollama + Neo4j (local)</div>
+                <textarea v-model="formData.simulationRequirement" :style="s.codeInput" placeholder="// 시뮬레이션 또는 예측 목표를 자연어로 설명하세요" rows="6" :disabled="loading"></textarea>
+                <div :style="s.modelBadge">엔진: Ollama + Neo4j (로컬)</div>
               </div>
             </div>
 
             <div :style="s.btnSection">
               <button :style="s.startEngineBtn" @click="startSimulation" :disabled="!canSubmit || loading">
-                <span v-if="!loading">Start Engine</span>
-                <span v-else>Initializing...</span>
+                <span v-if="!loading">엔진 시작</span>
+                <span v-else>초기화 중...</span>
                 <span>→</span>
               </button>
             </div>
@@ -218,11 +218,11 @@ const s = reactive({
 })
 
 const steps = [
-  { num: '01', title: 'Graph Build', desc: 'Extract reality seeds from your document, build knowledge graph with Neo4j + GraphRAG' },
-  { num: '02', title: 'Env Setup', desc: 'Generate agent personas, configure simulation parameters via local Ollama LLM' },
-  { num: '03', title: 'Simulation', desc: 'Run multi-agent simulation locally with dynamic memory updates and emergent behavior' },
-  { num: '04', title: 'Report', desc: 'ReportAgent analyzes the simulation results and generates a detailed prediction report' },
-  { num: '05', title: 'Interaction', desc: 'Chat with any agent from the simulated world or discuss findings with ReportAgent' },
+  { num: '01', title: '그래프 구축', desc: '문서에서 현실 시드를 추출하고, Neo4j + GraphRAG로 지식 그래프를 구축합니다' },
+  { num: '02', title: '환경 설정', desc: '에이전트 페르소나를 생성하고, 로컬 Ollama LLM으로 시뮬레이션 매개변수를 설정합니다' },
+  { num: '03', title: '시뮬레이션', desc: '동적 메모리 업데이트와 창발적 행동으로 멀티 에이전트 시뮬레이션을 로컬에서 실행합니다' },
+  { num: '04', title: '보고서', desc: 'ReportAgent가 시뮬레이션 결과를 분석하고 상세한 예측 보고서를 생성합니다' },
+  { num: '05', title: '상호작용', desc: '시뮬레이션된 세계의 에이전트와 대화하거나 ReportAgent와 결과를 논의합니다' },
 ]
 
 const router = useRouter()
