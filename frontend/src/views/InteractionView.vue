@@ -170,10 +170,13 @@ const loadReportData = async () => {
         }
       }
     } else {
-      addLog(`Failed to load report: ${reportRes.error || 'Unknown error'}`)
+      addLog(`Report not found, redirecting to home`)
+      router.push('/')
+      return
     }
   } catch (err) {
     addLog(`Load error: ${err.message}`)
+    router.push('/')
   }
 }
 

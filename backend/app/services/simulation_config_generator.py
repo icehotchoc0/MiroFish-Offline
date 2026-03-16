@@ -684,7 +684,8 @@ class SimulationConfigGenerator:
 이벤트 설정 JSON을 생성하세요:
 - 핫 주제 키워드 추출
 - 여론 발전 방향 기술
-- 초기 게시물 내용 설계, **각 게시물에 반드시 poster_type (게시자 유형) 지정**
+- 초기 게시물 내용을 **최소 {len(entities)}개 이상, 가능한 많이** 설계하세요. 각 엔티티가 최소 1개의 초기 게시물을 갖도록 하고, 주요 엔티티는 2-3개를 작성하세요.
+- **각 게시물에 반드시 poster_type (게시자 유형) 지정**
 
 **중요**: poster_type은 위의 "사용 가능한 엔티티 유형"에서 선택해야 초기 게시물을 적합한 Agent에게 할당할 수 있습니다.
 예: 공식 성명은 Official/University 유형이 게시, 뉴스는 MediaOutlet이 게시, 학생 의견은 Student가 게시.
