@@ -27,10 +27,12 @@ class Config:
     # JSON 설정 - ASCII 이스케이프 비활성화, 비ASCII 문자 직접 표시 (\uXXXX 형식 대신)
     JSON_AS_ASCII = False
 
-    # LLM 설정 (OpenAI 형식 통합 사용)
+    # LLM 설정
+    LLM_PROVIDER = os.environ.get('LLM_PROVIDER', 'ollama')  # 'ollama' 또는 'claude'
     LLM_API_KEY = os.environ.get('LLM_API_KEY')
     LLM_BASE_URL = os.environ.get('LLM_BASE_URL', 'http://localhost:11434/v1')
     LLM_MODEL_NAME = os.environ.get('LLM_MODEL_NAME', 'qwen2.5:32b')
+    CLAUDE_MAX_CONCURRENT = int(os.environ.get('CLAUDE_MAX_CONCURRENT', '5'))
 
     # Neo4j 설정
     NEO4J_URI = os.environ.get('NEO4J_URI', 'bolt://localhost:7687')
@@ -73,7 +75,7 @@ class Config:
     def validate(cls):
         """필수 설정 검증"""
         errors = []
-        if not cls.LLM_API_KEY:
+        if cls.LLM_PROVIDER != 'claude' and not cls.LLM_API_KEY:
             errors.append("LLM_API_KEY 미설정 (임의의 비어 있지 않은 값으로 설정, 예: 'ollama')")
         if not cls.NEO4J_URI:
             errors.append("NEO4J_URI 미설정")
