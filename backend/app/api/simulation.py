@@ -1017,6 +1017,384 @@ def get_simulation_profiles(simulation_id: str):
         }), 500
 
 
+# ============== Profile 수정 인터페이스 ==============
+
+
+def _load_profiles_file(simulation_id: str, platform: str = "reddit"):
+    """
+    시뮬레이션의 Profile 파일을 읽어 반환하는 헬퍼 함수
+
+    Args:
+        simulation_id: 시뮬레이션 ID
+        platform: 플랫폼 유형 (reddit/twitter)
+
+    Returns:
+        (profiles_list, file_path, error_response)
+        성공 시 error_response는 None, 실패 시 profiles_list와 file_path는 None
+    """
+    import json
+
+    sim_dir = os.path.join(Config.OASIS_SIMULATION_DATA_DIR, simulation_id)
+    if not os.path.exists(sim_dir):
+        return None, None, (jsonify({
+            "success": False,
+            "error": f"시뮬레이션이 존재하지 않습니다: {simulation_id}"
+        }), 404)
+
+    profile_path = os.path.join(sim_dir, f"{platform}_profiles.json")
+    if not os.path.exists(profile_path):
+        return None, None, (jsonify({
+            "success": False,
+            "error": f"Profile 파일이 존재하지 않습니다: {platform}_profiles.json"
+        }), 404)
+
+    with open(profile_path, 'r', encoding='utf-8') as f:
+        profiles = json.load(f)
+
+    if not isinstance(profiles, list):
+        return None, None, (jsonify({
+            "success": False,
+            "error": "Profile 파일 형식이 올바르지 않습니다 (리스트가 아님)"
+        }), 500)
+
+    return profiles, profile_path, None
+
+
+def _save_profiles_file(profiles: list, file_path: str):
+    """
+    Profile 리스트를 JSON 파일에 저장하는 헬퍼 함수
+
+    Args:
+        profiles: Profile 딕셔너리 리스트
+        file_path: 저장할 파일 경로
+    """
+    import json
+
+    with open(file_path, 'w', encoding='utf-8') as f:
+        json.dump(profiles, f, ensure_ascii=False, indent=2)
+
+
+def _update_profiles_count(simulation_id: str, new_count: int):
+    """
+    시뮬레이션 상태의 profiles_count를 업데이트하는 헬퍼 함수
+
+    Args:
+        simulation_id: 시뮬레이션 ID
+        new_count: 새로운 Profile 수
+    """
+    import json
+    from datetime import datetime
+
+    sim_dir = os.path.join(Config.OASIS_SIMULATION_DATA_DIR, simulation_id)
+    state_file = os.path.join(sim_dir, "state.json")
+
+    if not os.path.exists(state_file):
+        logger.warning(f"상태 파일이 존재하지 않아 profiles_count 업데이트 불가: {simulation_id}")
+        return
+
+    with open(state_file, 'r', encoding='utf-8') as f:
+        state_data = json.load(f)
+
+    state_data["profiles_count"] = new_count
+    state_data["updated_at"] = datetime.now().isoformat()
+
+    with open(state_file, 'w', encoding='utf-8') as f:
+        json.dump(state_data, f, ensure_ascii=False, indent=2)
+
+    logger.info(f"시뮬레이션 {simulation_id}의 profiles_count 업데이트: {new_count}")
+
+
+@simulation_bp.route('/<simulation_id>/profiles/<int:agent_index>', methods=['PUT'])
+def update_simulation_profile(simulation_id: str, agent_index: int):
+    """
+    시뮬레이션의 단일 Agent Profile 수정
+
+    URL 매개변수:
+        simulation_id: 시뮬레이션 ID
+        agent_index: Profile 인덱스 (0부터 시작)
+
+    Query 매개변수:
+        platform: 플랫폼 유형 (reddit/twitter, 기본값 reddit)
+
+    요청 (JSON):
+        수정할 Profile 필드 (부분 업데이트 지원)
+        {
+            "username": "new_username",
+            "name": "새 이름",
+            "bio": "새 소개",
+            "persona": "새 페르소나 설명",
+            "age": 30,
+            "gender": "male",
+            "mbti": "INTJ",
+            "country": "KR",
+            "profession": "개발자",
+            "interested_topics": ["기술", "AI"],
+            "karma": 2000
+        }
+
+    반환:
+        {
+            "success": true,
+            "data": {
+                "index": 0,
+                "profile": { ... },
+                "profiles_count": 10
+            }
+        }
+    """
+    try:
+        platform = request.args.get('platform', 'reddit')
+        data = request.get_json() or {}
+
+        if not data:
+            return jsonify({
+                "success": False,
+                "error": "수정할 데이터가 없습니다"
+            }), 400
+
+        profiles, profile_path, error = _load_profiles_file(simulation_id, platform)
+        if error:
+            return error
+
+        # 인덱스 범위 확인
+        if agent_index < 0 or agent_index >= len(profiles):
+            return jsonify({
+                "success": False,
+                "error": f"잘못된 인덱스입니다: {agent_index} (유효 범위: 0~{len(profiles) - 1})"
+            }), 400
+
+        # 기존 Profile에 전달받은 필드만 업데이트 (부분 업데이트)
+        profile = profiles[agent_index]
+        for key, value in data.items():
+            profile[key] = value
+
+        profiles[agent_index] = profile
+
+        # 파일에 저장
+        _save_profiles_file(profiles, profile_path)
+
+        logger.info(f"시뮬레이션 {simulation_id}의 Profile[{agent_index}] 수정 완료 (platform={platform})")
+
+        return jsonify({
+            "success": True,
+            "data": {
+                "index": agent_index,
+                "profile": profile,
+                "profiles_count": len(profiles)
+            }
+        })
+
+    except Exception as e:
+        logger.error(f"Profile 수정 실패: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }), 500
+
+
+@simulation_bp.route('/<simulation_id>/profiles/add', methods=['POST'])
+def add_simulation_profile(simulation_id: str):
+    """
+    시뮬레이션에 새 Agent Profile 추가
+
+    URL 매개변수:
+        simulation_id: 시뮬레이션 ID
+
+    Query 매개변수:
+        platform: 플랫폼 유형 (reddit/twitter, 기본값 reddit)
+
+    요청 (JSON):
+        OASIS Agent Profile 형식의 데이터
+        {
+            "username": "new_agent",
+            "name": "새 에이전트",
+            "bio": "소개글",
+            "persona": "상세한 페르소나 설명...",
+            "karma": 1000,
+            "age": 25,
+            "gender": "female",
+            "mbti": "ENFP",
+            "country": "KR",
+            "profession": "디자이너",
+            "interested_topics": ["디자인", "예술"]
+        }
+
+    반환:
+        {
+            "success": true,
+            "data": {
+                "index": 10,
+                "profile": { ... },
+                "profiles_count": 11
+            }
+        }
+    """
+    try:
+        platform = request.args.get('platform', 'reddit')
+        data = request.get_json() or {}
+
+        if not data:
+            return jsonify({
+                "success": False,
+                "error": "추가할 Profile 데이터가 없습니다"
+            }), 400
+
+        # 필수 필드 확인
+        required_fields = ["username", "name", "persona"]
+        missing_fields = [f for f in required_fields if not data.get(f)]
+        if missing_fields:
+            return jsonify({
+                "success": False,
+                "error": f"필수 필드가 누락되었습니다: {', '.join(missing_fields)}"
+            }), 400
+
+        profiles, profile_path, error = _load_profiles_file(simulation_id, platform)
+        if error:
+            return error
+
+        # 새 Profile의 user_id 자동 할당 (기존 최대값 + 1)
+        max_user_id = max((p.get("user_id", 0) for p in profiles), default=-1)
+        new_user_id = max_user_id + 1
+
+        # 기본값이 포함된 새 Profile 구성
+        from datetime import datetime
+        new_profile = {
+            "user_id": new_user_id,
+            "username": data.get("username", f"agent_{new_user_id}"),
+            "name": data.get("name", f"Agent {new_user_id}"),
+            "bio": data.get("bio", ""),
+            "persona": data.get("persona", ""),
+            "created_at": data.get("created_at", datetime.now().strftime("%Y-%m-%d")),
+        }
+
+        # 플랫폼별 기본 필드 추가
+        if platform == "reddit":
+            new_profile["karma"] = data.get("karma", 1000)
+        elif platform == "twitter":
+            new_profile["friend_count"] = data.get("friend_count", 100)
+            new_profile["follower_count"] = data.get("follower_count", 150)
+            new_profile["statuses_count"] = data.get("statuses_count", 500)
+
+        # 선택 필드 추가 (제공된 경우만)
+        optional_fields = ["age", "gender", "mbti", "country", "profession", "interested_topics"]
+        for field_name in optional_fields:
+            if field_name in data:
+                new_profile[field_name] = data[field_name]
+
+        # 추가 사용자 정의 필드도 허용
+        for key, value in data.items():
+            if key not in new_profile:
+                new_profile[key] = value
+
+        profiles.append(new_profile)
+
+        # 파일에 저장
+        _save_profiles_file(profiles, profile_path)
+
+        # 시뮬레이션 상태의 profiles_count 업데이트
+        _update_profiles_count(simulation_id, len(profiles))
+
+        new_index = len(profiles) - 1
+        logger.info(f"시뮬레이션 {simulation_id}에 새 Profile 추가 완료: index={new_index}, user_id={new_user_id} (platform={platform})")
+
+        return jsonify({
+            "success": True,
+            "data": {
+                "index": new_index,
+                "profile": new_profile,
+                "profiles_count": len(profiles)
+            }
+        })
+
+    except Exception as e:
+        logger.error(f"Profile 추가 실패: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }), 500
+
+
+@simulation_bp.route('/<simulation_id>/profiles/<int:agent_index>', methods=['DELETE'])
+def delete_simulation_profile(simulation_id: str, agent_index: int):
+    """
+    시뮬레이션에서 Agent Profile 삭제
+
+    URL 매개변수:
+        simulation_id: 시뮬레이션 ID
+        agent_index: 삭제할 Profile 인덱스 (0부터 시작)
+
+    Query 매개변수:
+        platform: 플랫폼 유형 (reddit/twitter, 기본값 reddit)
+        reindex: user_id 재할당 여부 (기본값 true)
+
+    반환:
+        {
+            "success": true,
+            "data": {
+                "deleted_index": 0,
+                "deleted_profile": { ... },
+                "profiles_count": 9
+            }
+        }
+    """
+    try:
+        platform = request.args.get('platform', 'reddit')
+        reindex = request.args.get('reindex', 'true').lower() == 'true'
+
+        profiles, profile_path, error = _load_profiles_file(simulation_id, platform)
+        if error:
+            return error
+
+        # 인덱스 범위 확인
+        if agent_index < 0 or agent_index >= len(profiles):
+            return jsonify({
+                "success": False,
+                "error": f"잘못된 인덱스입니다: {agent_index} (유효 범위: 0~{len(profiles) - 1})"
+            }), 400
+
+        # 최소 1개의 Profile은 유지해야 함
+        if len(profiles) <= 1:
+            return jsonify({
+                "success": False,
+                "error": "최소 1개의 Profile은 유지해야 합니다"
+            }), 400
+
+        # Profile 삭제
+        deleted_profile = profiles.pop(agent_index)
+
+        # user_id 재할당 (선택사항, OASIS가 순차적 user_id를 요구하는 경우)
+        if reindex:
+            for idx, profile in enumerate(profiles):
+                profile["user_id"] = idx
+
+        # 파일에 저장
+        _save_profiles_file(profiles, profile_path)
+
+        # 시뮬레이션 상태의 profiles_count 업데이트
+        _update_profiles_count(simulation_id, len(profiles))
+
+        logger.info(f"시뮬레이션 {simulation_id}에서 Profile[{agent_index}] 삭제 완료 (platform={platform}, reindex={reindex})")
+
+        return jsonify({
+            "success": True,
+            "data": {
+                "deleted_index": agent_index,
+                "deleted_profile": deleted_profile,
+                "profiles_count": len(profiles)
+            }
+        })
+
+    except Exception as e:
+        logger.error(f"Profile 삭제 실패: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }), 500
+
+
 @simulation_bp.route('/<simulation_id>/profiles/realtime', methods=['GET'])
 def get_simulation_profiles_realtime(simulation_id: str):
     """

@@ -75,10 +75,11 @@ def create_app(config_class=Config):
         return response
     
     # 블루프린트 등록
-    from .api import graph_bp, simulation_bp, report_bp
+    from .api import graph_bp, simulation_bp, report_bp, persona_bp
     app.register_blueprint(graph_bp, url_prefix='/api/graph')
     app.register_blueprint(simulation_bp, url_prefix='/api/simulation')
     app.register_blueprint(report_bp, url_prefix='/api/report')
+    app.register_blueprint(persona_bp, url_prefix='/api/personas')
     
     # 헬스 체크
     @app.route('/health')
