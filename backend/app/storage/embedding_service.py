@@ -2,7 +2,7 @@
 EmbeddingService — local embedding via Ollama API
 
 Replaces Zep Cloud's built-in embedding with local nomic-embed-text model.
-Uses Ollama's /api/embed endpoint for vector generation (768 dimensions).
+Uses Ollama's /api/embed endpoint for vector generation.
 """
 
 import time
@@ -46,7 +46,7 @@ class EmbeddingService:
             text: Input text to embed
 
         Returns:
-            768-dimensional float vector
+            float vector (dimensions depend on model)
 
         Raises:
             EmbeddingError: If Ollama request fails after retries
@@ -98,7 +98,7 @@ class EmbeddingService:
                 uncached_texts.append(text)
             else:
                 # Empty text — zero vector
-                results[i] = [0.0] * 768
+                results[i] = [0.0] * Config.EMBEDDING_DIMENSIONS
 
         # Batch-embed uncached texts
         if uncached_texts:

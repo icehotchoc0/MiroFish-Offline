@@ -25,7 +25,7 @@ CREATE_ENTITY_VECTOR_INDEX = """
 CREATE VECTOR INDEX entity_embedding IF NOT EXISTS
 FOR (n:Entity) ON (n.embedding)
 OPTIONS {indexConfig: {
-    `vector.dimensions`: 768,
+    `vector.dimensions`: {dims},
     `vector.similarity_function`: 'cosine'
 }}
 """
@@ -34,7 +34,7 @@ CREATE_RELATION_VECTOR_INDEX = """
 CREATE VECTOR INDEX fact_embedding IF NOT EXISTS
 FOR ()-[r:RELATION]-() ON (r.fact_embedding)
 OPTIONS {indexConfig: {
-    `vector.dimensions`: 768,
+    `vector.dimensions`: {dims},
     `vector.similarity_function`: 'cosine'
 }}
 """

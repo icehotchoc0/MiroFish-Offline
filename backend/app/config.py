@@ -42,6 +42,7 @@ class Config:
     # Embedding 설정
     EMBEDDING_MODEL = os.environ.get('EMBEDDING_MODEL', 'nomic-embed-text')
     EMBEDDING_BASE_URL = os.environ.get('EMBEDDING_BASE_URL', 'http://localhost:11434')
+    EMBEDDING_DIMENSIONS = int(os.environ.get('EMBEDDING_DIMENSIONS', '768'))
 
     # 파일 업로드 설정
     MAX_CONTENT_LENGTH = 50 * 1024 * 1024  # 50MB

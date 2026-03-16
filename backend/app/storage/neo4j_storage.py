@@ -64,9 +64,10 @@ class Neo4jStorage(GraphStorage):
     def _ensure_schema(self):
         """Create indexes and constraints if they don't exist."""
         with self._driver.session() as session:
+            dims = Config.EMBEDDING_DIMENSIONS
             for query in neo4j_schema.ALL_SCHEMA_QUERIES:
                 try:
-                    session.run(query)
+                    session.run(query.format(dims=dims))
                 except Exception as e:
                     logger.warning(f"Schema query warning (may already exist): {e}")
 
