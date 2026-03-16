@@ -121,6 +121,15 @@ def generate_report():
             }
         )
         
+        # 스레드 밖에서 미리 Flask 컨텍스트 의존 객체 생성
+        storage = current_app.extensions.get('neo4j_storage')
+        if not storage:
+            return jsonify({
+                "success": False,
+                "error": "GraphStorage not initialized — check Neo4j connection"
+            }), 500
+        graph_tools = GraphToolsService(storage=storage)
+
         # 백그라운드 태스크 정의
         def run_generate():
             try:
@@ -130,13 +139,8 @@ def generate_report():
                     progress=0,
                     message="Report Agent 초기화..."
                 )
-                
+
                 # Report Agent 생성
-                from flask import current_app as app
-                storage = app.extensions.get('neo4j_storage')
-                if not storage:
-                    raise ValueError("GraphStorage not initialized — check Neo4j connection")
-                graph_tools = GraphToolsService(storage=storage)
                 agent = ReportAgent(
                     graph_id=graph_id,
                     simulation_id=simulation_id,

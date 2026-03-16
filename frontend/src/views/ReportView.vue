@@ -68,7 +68,8 @@ import GraphPanel from '../components/GraphPanel.vue'
 import Step4Report from '../components/Step4Report.vue'
 import { getProject, getGraphData } from '../api/graph'
 import { getSimulation } from '../api/simulation'
-import { getReport, getReportStatus } from '../api/report'
+import { getReport } from '../api/report'
+import service from '../api/index'
 
 const route = useRoute()
 const router = useRouter()
@@ -138,21 +139,33 @@ const toggleMaximize = (target) => {
 
 // --- Data Logic ---
 const reportPollTimer = ref(null)
+const pollCount = ref(0)
+const MAX_POLL_COUNT = 120 // 최대 6분 (3초 × 120)
 
 const waitForReport = () => {
   addLog('보고서 생성 중... 완료될 때까지 대기합니다')
   updateStatus('processing')
+  pollCount.value = 0
   reportPollTimer.value = setInterval(async () => {
+    pollCount.value++
+    if (pollCount.value > MAX_POLL_COUNT) {
+      clearInterval(reportPollTimer.value)
+      reportPollTimer.value = null
+      addLog('보고서 생성 시간이 초과되었습니다')
+      updateStatus('error')
+      return
+    }
     try {
-      const reportRes = await getReport(currentReportId.value)
-      if (reportRes.success && reportRes.data) {
+      // 조용히 확인 (콘솔 에러 없이)
+      const res = await service.get(`/api/report/${currentReportId.value}`, { validateStatus: () => true })
+      if (res.success && res.data) {
         clearInterval(reportPollTimer.value)
         reportPollTimer.value = null
         addLog('보고서 생성 완료!')
-        await onReportReady(reportRes.data)
+        await onReportReady(res.data)
       }
     } catch {
-      // 아직 생성 중 — 계속 대기
+      // 조용히 대기
     }
   }, 3000)
 }
@@ -183,15 +196,14 @@ const loadReportData = async () => {
   try {
     addLog(`Loading report data: ${currentReportId.value}`)
 
-    const reportRes = await getReport(currentReportId.value)
-    if (reportRes.success && reportRes.data) {
-      await onReportReady(reportRes.data)
+    const res = await service.get(`/api/report/${currentReportId.value}`, { validateStatus: () => true })
+    if (res.success && res.data) {
+      await onReportReady(res.data)
     } else {
       // 보고서가 아직 없음 — 생성 중일 수 있으므로 폴링 시작
       waitForReport()
     }
-  } catch (err) {
-    // 404 등 에러 — 생성 중일 수 있으므로 폴링 시작
+  } catch {
     waitForReport()
   }
 }
