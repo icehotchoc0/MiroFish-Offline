@@ -85,36 +85,61 @@ class LLMClient:
         content = re.sub(r'<think>[\s\S]*?</think>', '', content).strip()
         return content
 
+    def _clean_json_response(self, response: str) -> str:
+        """LLM 응답에서 JSON 부분만 추출"""
+        cleaned = response.strip()
+        # markdown 코드 블록 마커 제거
+        cleaned = re.sub(r'^```(?:json)?\s*\n?', '', cleaned, flags=re.IGNORECASE)
+        cleaned = re.sub(r'\n?```\s*$', '', cleaned)
+        cleaned = cleaned.strip()
+        # 응답에서 첫 번째 { ... } 또는 [ ... ] 블록 추출 시도
+        if not cleaned.startswith(('{', '[')):
+            match = re.search(r'(\{[\s\S]*\}|\[[\s\S]*\])', cleaned)
+            if match:
+                cleaned = match.group(1)
+        return cleaned
+
     def chat_json(
         self,
         messages: List[Dict[str, str]],
         temperature: float = 0.3,
-        max_tokens: int = 4096
+        max_tokens: int = 4096,
+        max_retries: int = 3
     ) -> Dict[str, Any]:
         """
-        채팅 요청을 전송하고 JSON 반환
+        채팅 요청을 전송하고 JSON 반환 (실패 시 재시도)
 
         Args:
             messages: 메시지 목록
             temperature: 온도 파라미터
             max_tokens: 최대 토큰 수
+            max_retries: 최대 재시도 횟수
 
         Returns:
             파싱된 JSON 객체
         """
-        response = self.chat(
-            messages=messages,
-            temperature=temperature,
-            max_tokens=max_tokens,
-            response_format={"type": "json_object"}
-        )
-        # markdown 코드 블록 마커 제거
-        cleaned_response = response.strip()
-        cleaned_response = re.sub(r'^```(?:json)?\s*\n?', '', cleaned_response, flags=re.IGNORECASE)
-        cleaned_response = re.sub(r'\n?```\s*$', '', cleaned_response)
-        cleaned_response = cleaned_response.strip()
+        last_error = None
 
-        try:
-            return json.loads(cleaned_response)
-        except json.JSONDecodeError:
-            raise ValueError(f"LLM이 반환한 JSON 형식이 유효하지 않습니다: {cleaned_response}")
+        for attempt in range(max_retries):
+            response = self.chat(
+                messages=messages,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                response_format={"type": "json_object"}
+            )
+
+            cleaned_response = self._clean_json_response(response)
+
+            try:
+                return json.loads(cleaned_response)
+            except json.JSONDecodeError as e:
+                last_error = cleaned_response
+                if attempt < max_retries - 1:
+                    # 재시도 시 온도를 낮추고, JSON 형식을 다시 강조하는 메시지 추가
+                    temperature = max(0.1, temperature - 0.1)
+                    messages = messages + [
+                        {"role": "assistant", "content": response},
+                        {"role": "user", "content": "위 응답이 유효한 JSON이 아닙니다. 반드시 유효한 JSON 형식으로만 응답해 주세요. 다른 텍스트 없이 JSON만 출력하세요."}
+                    ]
+
+        raise ValueError(f"LLM이 {max_retries}회 시도 후에도 유효한 JSON을 반환하지 못했습니다: {last_error}")

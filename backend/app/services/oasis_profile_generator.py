@@ -27,18 +27,18 @@ logger = get_logger('mirofish.oasis_profile')
 
 @dataclass
 class OasisAgentProfile:
-    """OASIS Agent Profile数据结构"""
-    # 通用字段
+    """OASIS Agent Profile 데이터 구조"""
+    # 공통 필드
     user_id: int
     user_name: str
     name: str
     bio: str
     persona: str
     
-    # 可选字段 - Reddit风格
+    # 선택 필드 - Reddit 스타일
     karma: int = 1000
-    
-    # 可选字段 - Twitter风格
+
+    # 선택 필드 - Twitter 스타일
     friend_count: int = 100
     follower_count: int = 150
     statuses_count: int = 500
@@ -61,7 +61,7 @@ class OasisAgentProfile:
         """Reddit 플랫폼 형식으로 변환"""
         profile = {
             "user_id": self.user_id,
-            "username": self.user_name,  # OASIS 库要求字段名为 username（无下划线）
+            "username": self.user_name,  # OASIS 라이브러리에서 필드명을 username (밑줄 없음)으로 요구
             "name": self.name,
             "bio": self.bio,
             "persona": self.persona,
@@ -89,7 +89,7 @@ class OasisAgentProfile:
         """Twitter 플랫폼 형식으로 변환"""
         profile = {
             "user_id": self.user_id,
-            "username": self.user_name,  # OASIS 库要求字段名为 username（无下划线）
+            "username": self.user_name,  # OASIS 라이브러리에서 필드명을 username (밑줄 없음)으로 요구
             "name": self.name,
             "bio": self.bio,
             "persona": self.persona,
@@ -151,7 +151,7 @@ class OasisProfileGenerator:
     3. 개인 엔티티와 추상 그룹 엔티티 구분
     """
     
-    # MBTI类型列表
+    # MBTI 유형 목록
     MBTI_TYPES = [
         "INTJ", "INTP", "ENTJ", "ENTP",
         "INFJ", "INFP", "ENFJ", "ENFP",
@@ -159,7 +159,7 @@ class OasisProfileGenerator:
         "ISTP", "ISFP", "ESTP", "ESFP"
     ]
     
-    # 常见国家列表
+    # 주요 국가 목록
     COUNTRIES = [
         "China", "US", "UK", "Japan", "Germany", "France", 
         "Canada", "Australia", "Brazil", "India", "South Korea"
@@ -190,7 +190,7 @@ class OasisProfileGenerator:
         self.model_name = model_name or Config.LLM_MODEL_NAME
 
         if not self.api_key:
-            raise ValueError("LLM_API_KEY 未配置")
+            raise ValueError("LLM_API_KEY가 설정되지 않았습니다")
 
         self.client = OpenAI(
             api_key=self.api_key,
@@ -220,7 +220,7 @@ class OasisProfileGenerator:
         """
         entity_type = entity.get_entity_type() or "Entity"
         
-        # 基础信息
+        # 기본 정보
         name = entity.name
         user_name = self._generate_username(name)
         
@@ -267,11 +267,11 @@ class OasisProfileGenerator:
     
     def _generate_username(self, name: str) -> str:
         """사용자명 생성"""
-        # 移除特殊字符，转换为小写
+        # 특수 문자 제거, 소문자로 변환
         username = name.lower().replace(" ", "_")
         username = ''.join(c for c in username if c.isalnum() or c == '_')
         
-        # 添加随机后缀避免重复
+        # 중복 방지를 위한 랜덤 접미사 추가
         suffix = random.randint(100, 999)
         return f"{username}_{suffix}"
     
@@ -285,7 +285,7 @@ class OasisProfileGenerator:
             entity: 엔티티 노드 객체
 
         Returns:
-            包含facts, node_summaries, context的字典
+            facts, node_summaries, context를 포함하는 딕셔너리
         """
         if not self.storage:
             return {"facts": [], "node_summaries": [], "context": ""}
@@ -478,8 +478,8 @@ class OasisProfileGenerator:
                         {"role": "user", "content": prompt}
                     ],
                     response_format={"type": "json_object"},
-                    temperature=0.7 - (attempt * 0.1)  # 每次重试降低温度
-                    # 不设置max_tokens，让LLM自由发挥
+                    temperature=0.7 - (attempt * 0.1)  # 재시도마다 온도 낮춤
+                    # max_tokens 설정 안 함, LLM이 자유롭게 생성하도록
                 )
                 
                 content = response.choices[0].message.content
@@ -498,7 +498,7 @@ class OasisProfileGenerator:
                     if "bio" not in result or not result["bio"]:
                         result["bio"] = entity_summary[:200] if entity_summary else f"{entity_type}: {entity_name}"
                     if "persona" not in result or not result["persona"]:
-                        result["persona"] = entity_summary or f"{entity_name}是一个{entity_type}。"
+                        result["persona"] = entity_summary or f"{entity_name}은(는) {entity_type}입니다."
                     
                     return result
                     
@@ -517,7 +517,7 @@ class OasisProfileGenerator:
                 logger.warning(f"LLM 호출 실패 (attempt {attempt+1}): {str(e)[:80]}")
                 last_error = e
                 import time
-                time.sleep(1 * (attempt + 1))  # 指数退避
+                time.sleep(1 * (attempt + 1))  # 지수 백오프
         
         logger.warning(f"LLM 페르소나 생성 실패 ({max_attempts}회 시도): {last_error}, 규칙 기반 생성 사용")
         return self._generate_profile_rule_based(
@@ -592,10 +592,10 @@ class OasisProfileGenerator:
         
         # 6. 내용에서 부분 정보 추출 시도
         bio_match = re.search(r'"bio"\s*:\s*"([^"]*)"', content)
-        persona_match = re.search(r'"persona"\s*:\s*"([^"]*)', content)  # 可能被截断
+        persona_match = re.search(r'"persona"\s*:\s*"([^"]*)', content)  # 절삭되었을 수 있음
         
         bio = bio_match.group(1) if bio_match else (entity_summary[:200] if entity_summary else f"{entity_type}: {entity_name}")
-        persona = persona_match.group(1) if persona_match else (entity_summary or f"{entity_name}是一个{entity_type}。")
+        persona = persona_match.group(1) if persona_match else (entity_summary or f"{entity_name}은(는) {entity_type}입니다.")
         
         # 의미 있는 내용이 추출되면, 복구됨으로 표시
         if bio_match or persona_match:
@@ -610,7 +610,7 @@ class OasisProfileGenerator:
         logger.warning(f"JSON 복구 실패, 기본 구조 반환")
         return {
             "bio": entity_summary[:200] if entity_summary else f"{entity_type}: {entity_name}",
-            "persona": entity_summary or f"{entity_name}是一个{entity_type}。"
+            "persona": entity_summary or f"{entity_name}은(는) {entity_type}입니다."
         }
     
     def _get_system_prompt(self, is_individual: bool) -> str:
@@ -628,8 +628,8 @@ class OasisProfileGenerator:
     ) -> str:
         """개인 엔티티의 상세 페르소나 프롬프트 구축"""
         
-        attrs_str = json.dumps(entity_attributes, ensure_ascii=False) if entity_attributes else "无"
-        context_str = context[:3000] if context else "无额外上下文"
+        attrs_str = json.dumps(entity_attributes, ensure_ascii=False) if entity_attributes else "없음"
+        context_str = context[:3000] if context else "추가 컨텍스트 없음"
         
         return f"""엔티티에 대한 상세한 소셜 미디어 사용자 페르소나를 생성하세요. 기존 현실 상황을 최대한 재현합니다.
 
@@ -677,8 +677,8 @@ class OasisProfileGenerator:
     ) -> str:
         """그룹/기관 엔티티의 상세 페르소나 프롬프트 구축"""
         
-        attrs_str = json.dumps(entity_attributes, ensure_ascii=False) if entity_attributes else "无"
-        context_str = context[:3000] if context else "无额外上下文"
+        attrs_str = json.dumps(entity_attributes, ensure_ascii=False) if entity_attributes else "없음"
+        context_str = context[:3000] if context else "추가 컨텍스트 없음"
         
         return f"""기관/단체 엔티티에 대한 상세한 소셜 미디어 계정 설정을 생성하세요. 기존 현실 상황을 최대한 재현합니다.
 
@@ -758,7 +758,7 @@ class OasisProfileGenerator:
                 "age": 30,  # 기관 가상 연령
                 "gender": "other",  # 기관은 other 사용
                 "mbti": "ISTJ",  # 기관 스타일: 엄격하고 보수적
-                "country": "中国",
+                "country": "한국",
                 "profession": "Media",
                 "interested_topics": ["General News", "Current Events", "Public Affairs"],
             }
@@ -770,7 +770,7 @@ class OasisProfileGenerator:
                 "age": 30,  # 기관 가상 연령
                 "gender": "other",  # 기관은 other 사용
                 "mbti": "ISTJ",  # 기관 스타일: 엄격하고 보수적
-                "country": "中国",
+                "country": "한국",
                 "profession": entity_type,
                 "interested_topics": ["Public Policy", "Community", "Official Announcements"],
             }
@@ -803,52 +803,52 @@ class OasisProfileGenerator:
         output_platform: str = "reddit"
     ) -> List[OasisAgentProfile]:
         """
-        批量从实体生成Agent Profile（支持并行生成）
-        
+        엔티티에서 Agent Profile 일괄 생성 (병렬 생성 지원)
+
         Args:
-            entities: 实体列表
-            use_llm: 是否使用LLM生成详细人设
-            progress_callback: 进度回调函数 (current, total, message)
-            graph_id: 图谱ID，用于图谱检索获取更丰富上下文
-            parallel_count: 并行生成数量，默认5
-            realtime_output_path: 实时写入的文件路径（如果提供，每生成一个就写入一次）
-            output_platform: 输出平台格式 ("reddit" 或 "twitter")
-            
+            entities: 엔티티 목록
+            use_llm: LLM을 사용한 상세 페르소나 생성 여부
+            progress_callback: 진행 콜백 함수 (current, total, message)
+            graph_id: 그래프 ID, 그래프 검색으로 더 풍부한 컨텍스트 획득용
+            parallel_count: 병렬 생성 수, 기본값 5
+            realtime_output_path: 실시간 기록 파일 경로 (제공 시, 생성할 때마다 기록)
+            output_platform: 출력 플랫폼 형식 ("reddit" 또는 "twitter")
+
         Returns:
-            Agent Profile列表
+            Agent Profile 목록
         """
         import concurrent.futures
         from threading import Lock
         
-        # 设置graph_id用于图谱检索
+        # 그래프 검색용 graph_id 설정
         if graph_id:
             self.graph_id = graph_id
         
         total = len(entities)
-        profiles = [None] * total  # 预分配列表保持顺序
-        completed_count = [0]  # 使用列表以便在闭包中修改
+        profiles = [None] * total  # 순서 유지를 위한 리스트 사전 할당
+        completed_count = [0]  # 클로저에서 수정 가능하도록 리스트 사용
         lock = Lock()
         
-        # 实时写入文件的辅助函数
+        # 파일에 실시간 기록하는 헬퍼 함수
         def save_profiles_realtime():
             """생성된 profiles를 파일에 실시간 저장"""
             if not realtime_output_path:
                 return
             
             with lock:
-                # 过滤出已生成的 profiles
+                # 이미 생성된 profiles 필터링
                 existing_profiles = [p for p in profiles if p is not None]
                 if not existing_profiles:
                     return
                 
                 try:
                     if output_platform == "reddit":
-                        # Reddit JSON 格式
+                        # Reddit JSON 형식
                         profiles_data = [p.to_reddit_format() for p in existing_profiles]
                         with open(realtime_output_path, 'w', encoding='utf-8') as f:
                             json.dump(profiles_data, f, ensure_ascii=False, indent=2)
                     else:
-                        # Twitter CSV 格式
+                        # Twitter CSV 형식
                         import csv
                         profiles_data = [p.to_twitter_format() for p in existing_profiles]
                         if profiles_data:
@@ -895,7 +895,7 @@ class OasisProfileGenerator:
         print(f"Agent 페르소나 생성 시작 - 총 {total}개 엔티티, 병렬 수: {parallel_count}")
         print(f"{'='*60}\n")
         
-        # 使用线程池并行执行
+        # 스레드 풀로 병렬 실행
         with concurrent.futures.ThreadPoolExecutor(max_workers=parallel_count) as executor:
             # 모든 태스크 제출
             future_to_entity = {
@@ -957,7 +957,7 @@ class OasisProfileGenerator:
         """생성된 페르소나를 콘솔에 실시간 출력 (전체 내용, 절삭 없음)"""
         separator = "-" * 70
         
-        # 构建完整输出内容（不截断）
+        # 전체 출력 내용 구성 (절삭 없음)
         topics_str = ', '.join(profile.interested_topics) if profile.interested_topics else '없음'
         
         output_lines = [
@@ -1009,18 +1009,18 @@ class OasisProfileGenerator:
     
     def _save_twitter_csv(self, profiles: List[OasisAgentProfile], file_path: str):
         """
-        保存Twitter Profile为CSV格式（符合OASIS官方要求）
-        
-        OASIS Twitter要求的CSV字段：
-        - user_id: 用户ID（根据CSV顺序从0开始）
-        - name: 用户真实姓名
-        - username: 系统中的用户名
-        - user_char: 详细人设描述（注入到LLM系统提示中，指导Agent行为）
-        - description: 简短的公开简介（显示在用户资料页面）
-        
-        user_char vs description 区别：
-        - user_char: 内部使用，LLM系统提示，决定Agent如何思考和行动
-        - description: 外部显示，其他用户可见的简介
+        Twitter Profile을 CSV 형식으로 저장 (OASIS 공식 요구사항 준수)
+
+        OASIS Twitter 요구 CSV 필드:
+        - user_id: 사용자 ID (CSV 순서에 따라 0부터 시작)
+        - name: 사용자 실명
+        - username: 시스템 내 사용자명
+        - user_char: 상세 페르소나 설명 (LLM 시스템 프롬프트에 주입, Agent 행동 안내)
+        - description: 짧은 공개 소개 (사용자 프로필 페이지에 표시)
+
+        user_char vs description 차이:
+        - user_char: 내부 사용, LLM 시스템 프롬프트, Agent의 사고와 행동 방식 결정
+        - description: 외부 표시, 다른 사용자에게 보이는 소개
         """
         import csv
         
@@ -1048,11 +1048,11 @@ class OasisProfileGenerator:
                 description = profile.bio.replace('\n', ' ').replace('\r', ' ')
                 
                 row = [
-                    idx,                    # user_id: 从0开始的顺序ID
-                    profile.name,           # name: 真实姓名
-                    profile.user_name,      # username: 用户名
-                    user_char,              # user_char: 完整人设（内部LLM使用）
-                    description             # description: 简短简介（外部显示）
+                    idx,                    # user_id: 0부터 시작하는 순차 ID
+                    profile.name,           # name: 실명
+                    profile.user_name,      # username: 사용자명
+                    user_char,              # user_char: 전체 페르소나 (내부 LLM 사용)
+                    description             # description: 짧은 소개 (외부 표시)
                 ]
                 writer.writerow(row)
         
@@ -1060,21 +1060,23 @@ class OasisProfileGenerator:
     
     def _normalize_gender(self, gender: Optional[str]) -> str:
         """
-        标准化gender字段为OASIS要求的英文格式
-        
-        OASIS要求: male, female, other
+        gender 필드를 OASIS 요구 영문 형식으로 표준화
+
+        OASIS 요구사항: male, female, other
         """
         if not gender:
             return "other"
         
         gender_lower = gender.lower().strip()
         
-        # 중국어 매핑
+        # 중국어/한국어 매핑
         gender_map = {
-            "男": "male",
-            "女": "female",
-            "机构": "other",
-            "其他": "other",
+            "남": "male",
+            "여": "female",
+            "남성": "male",
+            "여성": "female",
+            "기관": "other",
+            "기타": "other",
             # 영어 기존
             "male": "male",
             "female": "female",
@@ -1085,38 +1087,38 @@ class OasisProfileGenerator:
     
     def _save_reddit_json(self, profiles: List[OasisAgentProfile], file_path: str):
         """
-        保存Reddit Profile为JSON格式
-        
-        使用与 to_reddit_format() 一致的格式，确保 OASIS 能正确读取。
-        必须包含 user_id 字段，这是 OASIS agent_graph.get_agent() 匹配的关键！
-        
-        必需字段：
-        - user_id: 用户ID（整数，用于匹配 initial_posts 中的 poster_agent_id）
-        - username: 用户名
-        - name: 显示名称
-        - bio: 简介
-        - persona: 详细人设
-        - age: 年龄（整数）
-        - gender: "male", "female", 或 "other"
-        - mbti: MBTI类型
-        - country: 国家
+        Reddit Profile을 JSON 형식으로 저장
+
+        to_reddit_format()과 동일한 형식을 사용하여 OASIS가 올바르게 읽을 수 있도록 보장.
+        user_id 필드를 반드시 포함해야 함. 이는 OASIS agent_graph.get_agent() 매칭의 핵심!
+
+        필수 필드:
+        - user_id: 사용자 ID (정수, initial_posts의 poster_agent_id 매칭에 사용)
+        - username: 사용자명
+        - name: 표시 이름
+        - bio: 소개
+        - persona: 상세 페르소나
+        - age: 나이 (정수)
+        - gender: "male", "female", 또는 "other"
+        - mbti: MBTI 유형
+        - country: 국가
         """
         data = []
         for idx, profile in enumerate(profiles):
-            # 使用与 to_reddit_format() 一致的格式
+            # to_reddit_format()과 동일한 형식 사용
             item = {
-                "user_id": profile.user_id if profile.user_id is not None else idx,  # 关键：必须包含 user_id
+                "user_id": profile.user_id if profile.user_id is not None else idx,  # 핵심: 반드시 user_id 포함
                 "username": profile.user_name,
                 "name": profile.name,
                 "bio": profile.bio[:150] if profile.bio else f"{profile.name}",
                 "persona": profile.persona or f"{profile.name} is a participant in social discussions.",
                 "karma": profile.karma if profile.karma else 1000,
                 "created_at": profile.created_at,
-                # OASIS必需字段 - 确保都有默认值
+                # OASIS 필수 필드 - 모두 기본값 보장
                 "age": profile.age if profile.age else 30,
                 "gender": self._normalize_gender(profile.gender),
                 "mbti": profile.mbti if profile.mbti else "ISTJ",
-                "country": profile.country if profile.country else "中国",
+                "country": profile.country if profile.country else "한국",
             }
             
             # 선택 필드
