@@ -172,8 +172,40 @@ export const getEnvStatus = (data) => {
  * Batch interview Agents
  * @param {Object} data - { simulation_id, interviews: [{ agent_id, prompt }] }
  */
-export const interviewAgents = (data) => {
-  return requestWithRetry(() => service.post('/api/simulation/interview/batch', data), 3, 1000)
+export const interviewAgents = async (data) => {
+  const BATCH_SIZE = 10
+  const interviews = data.interviews || []
+
+  if (interviews.length <= BATCH_SIZE) {
+    return requestWithRetry(() => service.post('/api/simulation/interview/batch', data), 3, 1000)
+  }
+
+  // 큰 배치를 BATCH_SIZE씩 나눠서 순차 호출
+  const allResults = {}
+  for (let i = 0; i < interviews.length; i += BATCH_SIZE) {
+    const batch = interviews.slice(i, i + BATCH_SIZE)
+    const res = await requestWithRetry(
+      () => service.post('/api/simulation/interview/batch', {
+        ...data,
+        interviews: batch
+      }),
+      3, 1000
+    )
+    if (res.success && res.data) {
+      const results = res.data.result?.results || res.data.results || {}
+      Object.assign(allResults, results)
+    }
+  }
+
+  return {
+    success: true,
+    data: {
+      result: {
+        results: allResults,
+        total: interviews.length
+      }
+    }
+  }
 }
 
 /**
